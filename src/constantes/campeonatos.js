@@ -1,0 +1,5 @@
+export const CAMPEONATOS = {
+  BRASILEIRAO: 10,
+  PAULISTA: 2,
+  CARIOCA: 1,
+}
