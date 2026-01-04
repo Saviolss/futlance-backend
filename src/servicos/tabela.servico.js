@@ -1,14 +1,29 @@
 import { buscarTabelaApi } from "./apiFutebol.servico.js"
+import { getCache, setCache } from "../cache/cacheMemoria.js"
+import { CACHE_TTL } from "../constantes/cacheTTL.js"
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
 
-export async function buscarTabelaBrasileirao() {
-  return await buscarTabelaApi(CAMPEONATOS.BRASILEIRAO)
+async function buscarTabelaCampeonato(idCampeonato) {
+  const chaveCache = `tabela:${idCampeonato}`
+
+  const cache = getCache(chaveCache)
+  if (cache) return cache
+
+  const tabela = await buscarTabelaApi(idCampeonato)
+
+  setCache(chaveCache, tabela, CACHE_TTL.TABELA)
+
+  return tabela
 }
 
-export async function buscarTabelaPaulista() {
-  return await buscarTabelaApi(CAMPEONATOS.PAULISTA)
+export function buscarTabelaBrasileirao() {
+  return buscarTabelaCampeonato(CAMPEONATOS.BRASILEIRAO)
 }
 
-export async function buscarTabelaCarioca() {
-  return await buscarTabelaApi(CAMPEONATOS.CARIOCA)
+export function buscarTabelaPaulista() {
+  return buscarTabelaCampeonato(CAMPEONATOS.PAULISTA)
+}
+
+export function buscarTabelaCarioca() {
+  return buscarTabelaCampeonato(CAMPEONATOS.CARIOCA)
 }
