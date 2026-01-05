@@ -12,18 +12,20 @@ export async function buscarAgendaCampeonato(idCampeonato) {
   const agenda = await buscarAgendaApi(idCampeonato)
 
   setCache(chaveCache, agenda, CACHE_TTL.AGENDA)
+  
 
   return agenda
 }
 
-export function buscarAgendaBrasileirao() {
-  return buscarAgendaCampeonato(CAMPEONATOS.BRASILEIRAO)
+export async function buscarAgendaBrasileirao() {
+  const agenda = await buscarAgendaApi(CAMPEONATOS.BRASILEIRAO)
+  return agenda.partidas
 }
-
-export function buscarAgendaPaulista() {
-  return buscarAgendaCampeonato(CAMPEONATOS.PAULISTA)
+export async function buscarAgendaPaulista() {
+  const agenda = await buscarAgendaApi(CAMPEONATOS.PAULISTA)
+  return agenda.partidas
 }
-
-export function buscarAgendaCarioca() {
-  return buscarAgendaCampeonato(CAMPEONATOS.CARIOCA)
+export async function buscarAgendaCarioca() {
+  const agenda = await buscarAgendaApi(CAMPEONATOS.CARIOCA)
+  return agenda.partidas
 }

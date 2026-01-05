@@ -24,7 +24,7 @@ export function setCache(chave, valor, ttlEmSegundos = 60) {
   })
 }
 
-export function limparCache(chave) {
+export function deleteCache(chave) {
   cache.delete(chave)
 }
 
