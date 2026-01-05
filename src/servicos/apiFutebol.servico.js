@@ -46,7 +46,7 @@ export function buscarAgendaApi(idCampeonato) {
 
 export function buscarPartidaApi(idPartida) {
   return requestApiFutebol(
-    `/partidas/${idPartida}`,
+    `/campeonatos/${idPartida}/partidas`,
     "Erro ao buscar dados da partida"
   )
 }

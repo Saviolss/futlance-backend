@@ -4,14 +4,14 @@ import { CACHE_TTL } from "../constantes/cacheTTL.js"
 import { PARTIDAS } from "../constantes/partidas.js"
 
 export async function buscarPartida(idPartida) {
-  const chaveCache = `partida:${idPartida}`
+  const chave = `partida:${idPartida}`
 
-  const cache = getCache(chaveCache)
+  const cache = getCache(chave)
   if (cache) return cache
 
   const partida = await buscarPartidaApi(idPartida)
 
-  setCache(chaveCache, partida, CACHE_TTL.PARTIDA)
+  setCache(chave, partida, CACHE_TTL.PARTIDA)
 
   return partida
 }

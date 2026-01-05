@@ -1,5 +1,5 @@
 export const PARTIDAS = {
-  BRASILEIRAO: "brasileirao",
-  PAULISTA: "paulista",
-  CARIOCA: "carioca",
+  BRASILEIRAO: 10,
+  PAULISTA: 9,
+  CARIOCA: 6,
 }
