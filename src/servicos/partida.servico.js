@@ -2,7 +2,7 @@ import { buscarPartidaApi } from "./apiFutebol.servico.js"
 import { getCache, setCache } from "../cache/cacheMemoria.js"
 import { CACHE_TTL } from "../constantes/cacheTTL.js"
 import { PARTIDAS } from "../constantes/partidas.js"
-
+  
 export async function buscarPartida(idPartida) {
   const chave = `partida:${idPartida}`
 

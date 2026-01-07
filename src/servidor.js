@@ -4,6 +4,10 @@ import app from "./app.js"
 import { iniciarJobs } from "./jobs/atualizarCache.job.js"
 import { iniciarJobAgenda } from "./jobs/agenda.job.js"
 import { iniciarJobPartidasAoVivo } from "./jobs/partidasAoVivo.job.js"
+import { gerenciarAoVivo } from "./jobs/gerenciadorAoVivo.job.js"
+import cron from "node-cron"
+
+cron.schedule("*/5 * * * *", gerenciarAoVivo)
 
 iniciarJobs()
 iniciarJobAgenda()

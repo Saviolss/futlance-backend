@@ -31,3 +31,4 @@ export function deleteCache(chave) {
 export function limparTudo() {
   cache.clear()
 }
+

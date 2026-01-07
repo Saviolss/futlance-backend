@@ -50,3 +50,10 @@ export function buscarPartidaApi(idPartida) {
     "Erro ao buscar dados da partida"
   )
 }
+
+export function artilheirosCampeonatoApi(idCampeonato) {
+  return requestApiFutebol(
+    `/campeonatos/${idCampeonato}/artilharia`,
+    "Erro ao buscar artilheiros do campeonato"
+  )
+}

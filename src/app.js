@@ -10,6 +10,7 @@ import agendaRotas from "./rotas/agenda.rotas.js"
 import partidaRotas from "./rotas/partida.rotas.js" 
 import statusRotas from "./rotas/status.rotas.js"
 import aoVivoRotas from "./rotas/aoVivo.rotas.js"
+import agendaGeral from "./rotas/agendaGeral.rotas.js"
 
 // Carrega variáveis de ambiente
 dotenv.config()
@@ -53,6 +54,7 @@ app.use("/tabela", tabelaRotas)
 app.use("/agenda", agendaRotas)
 app.use("/partida", partidaRotas)
 app.use("/api", aoVivoRotas)
+app.use("/agenda-geral", agendaGeral)
 
 /* ============================
    TRATAMENTO DE ERROS
