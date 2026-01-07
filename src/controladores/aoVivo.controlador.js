@@ -8,3 +8,30 @@ export function getAoVivo(req, res) {
     campeonatos: partidas
   })
 }
+
+export function getAoVivoPaulista(req, res) {
+  const partidas = obterTodasPartidasAoVivo()
+
+  res.json({
+    atualizadoEm: new Date().toISOString(),
+    campeonatos: partidas["paulista"] || []
+  })
+}
+
+export function getAoVivoBrasileiro(req, res) {
+  const partidas = obterTodasPartidasAoVivo()
+
+  res.json({
+    atualizadoEm: new Date().toISOString(),
+    campeonatos: partidas["brasileiro"] || []
+  })
+}
+
+export function getAoVivoCarioca(req, res) {
+  const partidas = obterTodasPartidasAoVivo()
+
+  res.json({
+    atualizadoEm: new Date().toISOString(),
+    campeonatos: partidas["carioca"] || []
+  })
+}

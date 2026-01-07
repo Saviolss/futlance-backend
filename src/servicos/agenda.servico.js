@@ -17,6 +17,20 @@ export async function buscarAgendaCampeonato(idCampeonato) {
   return agenda
 }
 
+export async function buscarAgendaGeral() {
+  const [brasileirao, paulista, carioca] = await Promise.all([
+    buscarAgendaCampeonato(CAMPEONATOS.BRASILEIRAO),
+    buscarAgendaCampeonato(CAMPEONATOS.PAULISTA),
+    buscarAgendaCampeonato(CAMPEONATOS.CARIOCA),
+  ])
+
+  return {
+    brasileirao: brasileirao.partidas,
+    paulista: paulista.partidas,
+    carioca: carioca.partidas,
+  }
+}
+
 export async function buscarAgendaBrasileirao() {
   const agenda = await buscarAgendaApi(CAMPEONATOS.BRASILEIRAO)
   return agenda.partidas
