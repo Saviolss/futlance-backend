@@ -1,22 +1,19 @@
 import { buscarAgendaBrasileirao, buscarAgendaCarioca, buscarAgendaPaulista } from "../servicos/agenda.servico.js";
 
-export async function getAgendaGeral(req, res, next) {
-  try {
-    const agenda = await Promise.all([
-      buscarAgendaBrasileirao(),
-      buscarAgendaPaulista(),
-      buscarAgendaCarioca()
-    ]);
+export async function getAgendaGeral(req, res) {
+  const [brasileirao, paulista, carioca] = await Promise.allSettled([
+    buscarAgendaPaulista(),
+    buscarAgendaCarioca(),
+    buscarAgendaBrasileirao() 
+  ])
 
-    res.json({
-      brasileirao: agenda[0],
-      paulista: agenda[1],
-      carioca: agenda[2]
-    });
-  } catch (erro) {
-    next(erro);
-  }
-} 
+  res.json({
+    brasileirao: brasileirao.status === "fulfilled" ? brasileirao.value : [],
+    paulista: paulista.status === "fulfilled" ? paulista.value : [],
+    carioca: carioca.status === "fulfilled" ? carioca.value : []
+  })
+}
+
 
 export async function getAgendaBrasileirao(req, res, next) {
   try {
