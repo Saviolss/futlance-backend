@@ -30,6 +30,8 @@ export async function getArtilheirosCarioca(req, res, next) {
   }
 }
 
+
+
 export async function getTabelaBrasileirao(req, res, next) {
   try {
     const tabela = await buscarTabelaBrasileirao()

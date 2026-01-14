@@ -6,8 +6,12 @@ import { iniciarJobAgenda } from "./jobs/agenda.job.js"
 import { iniciarJobPartidasAoVivo } from "./jobs/partidasAoVivo.job.js"
 import { gerenciarAoVivo } from "./jobs/gerenciadorAoVivo.job.js"
 import cron from "node-cron"
+import { iniciarWebSocket } from "./websocket/websocket.js"
+import http from "http"
 
 cron.schedule("*/5 * * * *", gerenciarAoVivo)
+const server = http.createServer(app)
+iniciarWebSocket(server)
 
 iniciarJobs()
 iniciarJobAgenda()

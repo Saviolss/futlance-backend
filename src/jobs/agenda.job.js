@@ -7,13 +7,23 @@ import {
 
 import { adicionarPartidaAoVivo } from "../utils/partidasAoVivo.js"
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
+import { getCache, setCache } from "../cache/cacheMemoria.js"
+import { CACHE_TTL } from "../constantes/cacheTTL.js"
 
 export function iniciarJobAgenda() {
-  executarJobAgenda()
+  // ❌ NÃO EXECUTA IMEDIATAMENTE
   cron.schedule("0 */12 * * *", executarJobAgenda)
 }
 
 async function executarJobAgenda() {
+  const chave = "agenda:atualizada"
+
+  // 🛑 Trava de cache
+  if (getCache(chave)) {
+    console.log("📅 Agenda já atualizada (cache)")
+    return
+  }
+
   try {
     console.log("📅 Atualizando agenda...")
 
@@ -26,21 +36,29 @@ async function executarJobAgenda() {
     const agendaCarioca = await buscarAgendaCarioca()
     processarAgenda(CAMPEONATOS.CARIOCA, agendaCarioca)
 
+    // ✅ Marca como atualizada
+    setCache(chave, true, CACHE_TTL.AGENDA)
+
     console.log("✅ Agenda processada")
   } catch (erro) {
     console.error("❌ Erro ao atualizar agenda", erro.message)
   }
 }
 
-function processarAgenda(idCampeonato, partidas) {
-  if (!Array.isArray(partidas)) return
+function processarAgenda(agenda, campeonato) {
+  if (!agenda) return []
 
-  partidas.forEach(partida => {
-    if (
-      partida.status === "agendado" ||
-      partida.status === "andamento"
-    ) {
-      adicionarPartidaAoVivo(idCampeonato, partida)
-    }
-  })
+  // tenta extrair partidas de qualquer estrutura
+  const raiz = agenda.partidas || agenda.fases || agenda
+
+  const todas = extrairTodasPartidas(raiz)
+    .map(p => normalizarPartida(p, campeonato))
+    .filter(Boolean)
+
+  if (!todas.length) {
+    console.log(`ℹ️ [${campeonato}] sem partidas`)
+    return []
+  }
+
+  return selecionarRodadaPorData(todas)
 }
