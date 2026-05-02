@@ -5,11 +5,15 @@ import rateLimit from "express-rate-limit"
 import dotenv from "dotenv"
 
 // Rotas
+import home from "./rotas/home.rotas.js"
 import tabelaRotas from "./rotas/tabela.rotas.js"
 import agendaRotas from "./rotas/agenda.rotas.js"
 import statusRotas from "./rotas/status.rotas.js"
 import agendaGeral from "./rotas/agendaGeral.rotas.js"
 import aoVivoRotas from "./rotas/partidaLive.rota.js"
+import encerradasRotas from "./rotas/finalizada.rotas.js"
+import campeonatosRotas from "./rotas/campeonatos.rotas.js"
+import artilheiroRotas from "./rotas/artilheiro.rota.js"
 
 // Carrega variáveis de ambiente
 dotenv.config()
@@ -47,13 +51,15 @@ app.use(express.json())
 /* ============================
    ROTAS
 ============================ */
-
+app.use("/", home)
 app.use("/status", statusRotas)
 app.use("/tabela", tabelaRotas)
 app.use("/agenda", agendaRotas)
 app.use("/api", aoVivoRotas)
-app.use("/gols", tabelaRotas)
-app.use("/agenda-geral", agendaGeral)
+app.use("/api", agendaGeral)
+app.use("/api", encerradasRotas)
+app.use("/campeonatos", campeonatosRotas)
+app.use("/artilheiros", artilheiroRotas)
 
 /* ============================
    TRATAMENTO DE ERROS

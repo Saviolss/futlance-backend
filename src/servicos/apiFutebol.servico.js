@@ -44,7 +44,12 @@ export function buscarAgendaApi(idCampeonato) {
   )
 }
 
-
+export function buscarRodadasApi(idCampeonato) {
+  return requestApiFutebol(
+    `/campeonatos/${idCampeonato}/partidas`,
+    "Erro ao buscar partidas encerradas do campeonato"
+  )
+}
 
 
 

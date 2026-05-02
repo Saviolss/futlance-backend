@@ -1,141 +1,154 @@
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
-import { buscarTabelaApi, artilheirosCampeonatoApi } from "./apiFutebol.servico.js"
+import { buscarTabelaApi } from "./apiFutebol.servico.js"
+
 import { getCache, setCache } from "../cache/cacheMemoria.js"
 import { CACHE_TTL } from "../constantes/cacheTTL.js"
 
-/* 🔹 função base */
-async function buscarTabelaCampeonato(idCampeonato) {
-  const chave = `tabela:${idCampeonato}`
+/* =========================================================
+   FUNÇÃO BASE
+========================================================= */
 
-  const cache = getCache(chave)
+async function buscarTabelaCampeonato(idCampeonato) {
+
+  const chaveCache = `tabela:${idCampeonato}`
+
+  const cache = getCache(chaveCache)
   if (cache) return cache
 
-  const tabelaApi = await buscarTabelaApi(idCampeonato)
 
-  // 🔥 CASO ESPECIAL: CARIOCA (GRUPOS)
-  if (idCampeonato === CAMPEONATOS.CARIOCA) {
-    const guanabara = tabelaApi?.["taca-guanabara"]
+  /* Copa do Brasil não possui endpoint tabela */
+  if (idCampeonato === CAMPEONATOS.COPABRASIL) {
 
-    if (!guanabara) return {}
-
-    const resultado = {}
-
-    for (const [grupo, times] of Object.entries(guanabara)) {
-      resultado[grupo] = times
-        .map(normalizarTimeTabela)
-        .filter(Boolean)
+    return {
+      tipo: "campeonatos",
+      fase: null,
+      dados: []
     }
-
-    setCache(chave, resultado, CACHE_TTL.TABELA)
-    return resultado
   }
 
-  // 🔹 FLUXO NORMAL (BR / PAULISTA)
-  if (!Array.isArray(tabelaApi)) return []
+  const tabela = await buscarTabelaApi(idCampeonato)
 
-  const tabelaNormalizada = tabelaApi
-    .map(normalizarTimeTabela)
-    .filter(Boolean)
+  const resposta = {
+    tipo: "campeonatos",
+    ...normalizarTabela(tabela)
+  }
 
-  setCache(chave, tabelaNormalizada, CACHE_TTL.TABELA)
+  setCache(
+    chaveCache,
+    resposta,
+    CACHE_TTL.TABELA
+  )
 
-  return tabelaNormalizada
+  return resposta
 }
 
 
-/* 🔹 exports públicos */
+/* =========================================================
+   NORMALIZA TABELA
+========================================================= */
+
+function normalizarTabela(tabela) {
+
+  /* pontos corridos */
+  if (Array.isArray(tabela)) {
+    return {
+      fase: "tabela",
+      dados: tabela.map(normalizarTime)
+    }
+  }
+
+  /* grupos */
+  if (tabela?.grupos) {
+    return {
+      fase: "grupos",
+      dados: Object.entries(tabela.grupos).map(
+        ([nomeGrupo, times]) => ({
+          grupo: nomeGrupo,
+          times: times.map(normalizarTime)
+        })
+      )
+    }
+  }
+
+  /* se paulista/carioca mudarem para mata-mata */
+  if (tabela?.fases) {
+    return {
+      fase: "mata-mata",
+      dados: []
+    }
+  }
+
+  return {
+    fase: null,
+    dados: []
+  }
+}
+
+
+/* =========================================================
+   NORMALIZA TIME
+========================================================= */
+
+function normalizarTime(time) {
+
+  const dadosTime = time.time || {}
+
+  return {
+    time_id: dadosTime.time_id,
+    nome: dadosTime.nome_popular || "",
+    escudo: dadosTime.escudo || "",
+
+    posicao: time.posicao,
+    pontos: time.pontos,
+    jogos: time.jogos,
+
+    vitorias: time.vitorias,
+    empates: time.empates,
+    derrotas: time.derrotas,
+
+    gols_pro: time.gols_pro,
+    gols_contra: time.gols_contra,
+    saldo_gols: time.saldo_gols,
+
+    aproveitamento: time.aproveitamento
+  }
+}
+
+
+/* =========================================================
+   EXPORTS
+========================================================= */
+
 export function buscarTabelaBrasileirao() {
-  return buscarTabelaCampeonato(CAMPEONATOS.BRASILEIRAO)
+  return buscarTabelaCampeonato(
+    CAMPEONATOS.BRASILEIRAO
+  )
 }
 
 export function buscarTabelaPaulista() {
-  return buscarTabelaCampeonato(CAMPEONATOS.PAULISTA)
+  return buscarTabelaCampeonato(
+    CAMPEONATOS.PAULISTA
+  )
 }
 
 export function buscarTabelaCarioca() {
-  return buscarTabelaCampeonato(CAMPEONATOS.CARIOCA)
+  return buscarTabelaCampeonato(
+    CAMPEONATOS.CARIOCA
+  )
 }
-export async function atualizarTabelaCampeonato(idCampeonato) {
+
+export function buscarTabelaCopaBrasil() {
+  return buscarTabelaCampeonato(
+    CAMPEONATOS.COPABRASIL
+  )
+}
+
+export function atualizarTabelaCampeonato(idCampeonato) {
+
+  const chaveCache = `tabela:${idCampeonato}`
+
+  getCache(chaveCache) &&
+    setCache(chaveCache, null, 0)
+
   return buscarTabelaCampeonato(idCampeonato)
-}
-
-/* 🔹 artilheiros */
-async function buscarArtilheirosCampeonato(idCampeonato) {
-  const chave = `artilheiros:${idCampeonato}`
-
-  const cache = getCache(chave)
-  if (cache) return cache
-
-  const artilheirosApi = await artilheirosCampeonatoApi(idCampeonato)
-  if (!Array.isArray(artilheirosApi)) return []
-
-  const artilheirosNormalizados = artilheirosApi
-    .map(normalizarArtilheiro)
-    .filter(Boolean)
-
-  setCache(chave, artilheirosNormalizados, CACHE_TTL.ARTILHEIROS)
-
-  return artilheirosNormalizados
-}
-
-export function buscarArtilheirosBrasileirao() {
-  return buscarArtilheirosCampeonato(CAMPEONATOS.BRASILEIRAO)
-}
-
-export function buscarArtilheirosPaulista() {
-  return buscarArtilheirosCampeonato(CAMPEONATOS.PAULISTA)
-}
-
-export function buscarArtilheirosCarioca() {
-  return buscarArtilheirosCampeonato(CAMPEONATOS.CARIOCA)
-}
-
-/* 🔹 normalização */
-function normalizarTimeTabela(item) {
-  if (!item?.time) return null
-
-  return {
-    id: item.time.time_id,
-    posicao: item.posicao,
-    nome: item.time.nome_popular,
-    escudo: item.time.escudo,
-
-    pontos: item.pontos,
-    jogos: item.jogos,
-    vitorias: item.vitorias,
-    empates: item.empates,
-    derrotas: item.derrotas,
-
-    golsPro: item.gols_pro,
-    golsContra: item.gols_contra,
-    saldoGols: item.saldo_gols,
-  }
-}
-
-function normalizarArtilheiro(item) {
-  if (!item?.atleta || !item?.time) return null
-
-  return {
-    id: item.atleta.atleta_id,
-    nome: item.atleta.nome_popular,
-
-    clube: {
-      id: item.time.time_id,
-      nome: item.time.nome_popular,
-      escudo: item.time.escudo,
-    },
-
-    gols: item.gols,
-  }
-}
-
-
-function extrairTimesTabela(node) {
-  if (Array.isArray(node)) return node
-
-  if (node && typeof node === "object") {
-    return Object.values(node).flatMap(extrairTimesTabela)
-  }
-
-  return []
 }
