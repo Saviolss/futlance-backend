@@ -10,16 +10,23 @@ import {
   buscarAgendaBrasileirao,
   buscarAgendaPaulista,
   buscarAgendaCarioca,
+  buscarAgendaCopaBrasil
 } from "../servicos/agenda.servico.js"
+
+import {
+  buscarArtilheirosBrasileirao,
+  buscarArtilheirosPaulista,
+  buscarArtilheirosCarioca,
+  buscarArtilheirosCopaBrasil
+} from "../servicos/artilheiro.servico.js"
 
 export function iniciarJobs() {
   // ======================
-  // TABELAS – a cada 10 min
+  // TABELAS – a cada 45 min
   // ======================
-  cron.schedule("*/10 * * * *", async () => {
+  cron.schedule("*/45 * * * *", async () => {
     try {
       console.log("🔄 Atualizando cache das tabelas...")
-
       await Promise.all([
         buscarTabelaBrasileirao(),
         buscarTabelaPaulista(),
@@ -33,9 +40,9 @@ export function iniciarJobs() {
   })
 
   // ======================
-  // AGENDAS – a cada 15 min
+  // AGENDAS – a cada 12 horas
   // ======================
-  cron.schedule("*/15 * * * *", async () => {
+  cron.schedule("0 */12 * * *", async () => {
     try {
       console.log("📅 Atualizando cache das agendas...")
 
@@ -43,11 +50,32 @@ export function iniciarJobs() {
         buscarAgendaBrasileirao(),
         buscarAgendaPaulista(),
         buscarAgendaCarioca(),
+        buscarAgendaCopaBrasil(),
       ])
 
       console.log("✅ Agendas atualizadas")
     } catch (erro) {
       console.error("❌ Erro ao atualizar agendas", erro.message)
+    }
+  })
+
+  // ======================
+  // ARTILHEIROS – a cada 40 min
+  // ======================
+  cron.schedule("*/40 * * * *", async () => {
+    try {
+      console.log("🔄 Atualizando cache dos artilheiros...");
+
+      await Promise.all([
+        buscarArtilheirosBrasileirao(),
+        buscarArtilheirosPaulista(),
+        buscarArtilheirosCarioca(),
+        buscarArtilheirosCopaBrasil(),
+      ]);
+
+      console.log("✅ Artilheiros atualizados");
+    } catch (erro) {
+      console.error("❌ Erro ao atualizar artilheiros", erro.message);
     }
   })
 }

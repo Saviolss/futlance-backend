@@ -1,46 +1,28 @@
-import { 
-  buscarTabelaBrasileirao, buscarTabelaPaulista, buscarTabelaCarioca,
-  buscarArtilheirosBrasileirao, buscarArtilheirosCarioca, buscarArtilheirosPaulista 
+import {
+  buscarTabelaBrasileirao,
+  buscarTabelaPaulista,
+  buscarTabelaCarioca,
+  buscarTabelaCopaBrasil
 } from "../servicos/tabela.servico.js"
 
-export async function getArtilheirosBrasileirao(req, res, next) {
-  try {
-    const artilheiros = await buscarArtilheirosBrasileirao()
-    res.json(artilheiros)
-  } catch (erro) {
-    next(erro)
-  }
-}
-
-export async function getArtilheirosPaulista(req, res, next) {
-  try {
-    const artilheiros = await buscarArtilheirosPaulista()
-    res.json(artilheiros)
-  } catch (erro) {
-    next(erro)
-  }
-}
-
-export async function getArtilheirosCarioca(req, res, next) {
-  try {
-    const artilheiros = await buscarArtilheirosCarioca()
-    res.json(artilheiros)
-  } catch (erro) {
-    next(erro)
-  }
-}
-
-
-
+/* =========================================================
+   BRASILEIRÃO
+========================================================= */
 export async function getTabelaBrasileirao(req, res, next) {
   try {
     const tabela = await buscarTabelaBrasileirao()
+
+    // 🔥 resposta já vem pronta pro front
+    // { fase, dados }
     res.json(tabela)
   } catch (erro) {
     next(erro)
   }
 }
 
+/* =========================================================
+   PAULISTA
+========================================================= */
 export async function getTabelaPaulista(req, res, next) {
   try {
     const tabela = await buscarTabelaPaulista()
@@ -50,6 +32,9 @@ export async function getTabelaPaulista(req, res, next) {
   }
 }
 
+/* =========================================================
+   CARIOCA
+========================================================= */
 export async function getTabelaCarioca(req, res, next) {
   try {
     const tabela = await buscarTabelaCarioca()
@@ -57,4 +42,16 @@ export async function getTabelaCarioca(req, res, next) {
   } catch (erro) {
     next(erro)
   }
-}           
+}
+
+/* =========================================================
+   COPA DO BRASIL
+========================================================= */
+export async function getTabelaCopaBrasil(req, res, next) {
+  try {
+    const tabela = await buscarTabelaCopaBrasil()
+    res.json(tabela)
+  } catch (erro) {
+    next(erro)
+  }
+}

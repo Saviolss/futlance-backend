@@ -1,7 +1,6 @@
 import { Router } from "express"
 import {
-  getTabelaBrasileirao, getTabelaPaulista, getTabelaCarioca,
-  getArtilheirosBrasileirao, getArtilheirosPaulista, getArtilheirosCarioca
+  getTabelaBrasileirao, getTabelaPaulista, getTabelaCarioca, getTabelaCopaBrasil
  } from "../controladores/tabela.controlador.js"
 
 const router = Router()
@@ -9,8 +8,6 @@ const router = Router()
 router.get("/brasileirao", getTabelaBrasileirao)
 router.get("/paulista", getTabelaPaulista)
 router.get("/carioca", getTabelaCarioca)
-router.get("/artilheiros/brasileirao", getArtilheirosBrasileirao)
-router.get("/artilheiros/paulista", getArtilheirosPaulista)
-router.get("/artilheiros/carioca", getArtilheirosCarioca)
+router.get("/copabrasil", getTabelaCopaBrasil)
 
 export default router

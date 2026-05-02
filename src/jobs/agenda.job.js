@@ -3,6 +3,7 @@ import {
   buscarAgendaBrasileirao,
   buscarAgendaPaulista,
   buscarAgendaCarioca,
+  buscarAgendaCopaBrasil
 } from "../servicos/agenda.servico.js"
 
 import { adicionarPartidaAoVivo } from "../utils/partidasAoVivo.js"
@@ -35,6 +36,9 @@ async function executarJobAgenda() {
 
     const agendaCarioca = await buscarAgendaCarioca()
     processarAgenda(CAMPEONATOS.CARIOCA, agendaCarioca)
+
+    const agendaCopaBrasil = await buscarAgendaCopaBrasil()
+    processarAgenda(CAMPEONATOS.COPABRASIL, agendaCopaBrasil)
 
     // ✅ Marca como atualizada
     setCache(chave, true, CACHE_TTL.AGENDA)
