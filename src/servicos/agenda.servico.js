@@ -178,7 +178,7 @@ export function buscarAgendaGeral() {
   ]).then(([brasileirao, paulista, carioca, copaBrasil]) => {
     const jogosAgenda = [
       ...(brasileirao.status === "fulfilled"
-        ? brasileiro.value
+        ? brasileirao.value
         : []),
 
       ...(paulista.status === "fulfilled"

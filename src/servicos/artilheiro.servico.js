@@ -51,7 +51,6 @@ function normalizarArtilheiros(payload) {
     payload
 
   if (!Array.isArray(lista)) {
-    console.log("Formato inesperado:", payload)
     return { dados: [] }
   }
 
