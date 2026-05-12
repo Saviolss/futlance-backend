@@ -1,78 +1,120 @@
 import { emitirEvento } from "../websocket/websocket.js"
-import { temJogosHoje } from "./temJogo.job.js"
-import { buscarTodasAoVivo } from "../servicos/partidaLive.servico.js"
+
+import {
+  buscarTodasAoVivo
+} from "../servicos/partidaLive.servico.js"
+
+import {
+  buscarTodasFinalizadas
+} from "../servicos/partidaFinalizada.servico.js"
 
 /* ======================================================
-   ⚙️ JOB INTELIGENTE (INTERVALO DINÂMICO)
+   CACHE LOCAL
+====================================================== */
+
+let ultimoHashAoVivo = ""
+let ultimoHashFinalizadas = ""
+
+/* ======================================================
+   GERA HASH
+====================================================== */
+
+function gerarHash(partidas = []) {
+  return JSON.stringify(
+    partidas.map(p => ({
+      id: p.partida_id,
+      mandante: p.placar_mandante,
+      visitante: p.placar_visitante,
+      status: p.status,
+
+      penalti_mandante: p.penalti?.mandante || 0,
+      penalti_visitante: p.penalti?.visitante || 0
+    }))
+  )
+}
+
+/* ======================================================
+   ⚙️ JOB PRINCIPAL
 ====================================================== */
 
 export function iniciarJobPartidas() {
+
   console.log("⚙️ Job de partidas inicializado")
 
-  let ultimoHash = null
-  let intervaloAtual = 2 * 60 * 1000 // começa com 2 min
+  async function atualizar() {
 
-  async function executar() {
+    let aoVivo = []
+
     try {
-      // 🛑 1. SEM JOGO HOJE → SUPER ECONOMIA
-      if (!temJogosHoje()) {
-        console.log("😴 Nenhum jogo hoje — modo economia")
 
-        intervaloAtual = 10 * 60 * 1000 // 10 min
-        agendar()
-        return
-      }
+      /* ============================
+         🔴 AO VIVO
+      ============================ */
 
-      console.log("🔄 Verificando jogos ao vivo...")
+      aoVivo = await buscarTodasAoVivo()
 
-      const aoVivo = await buscarTodasAoVivo()
+      const novoHashAoVivo = gerarHash(aoVivo)
 
-      // 🛑 2. SEM JOGO AO VIVO → MODO MÉDIO
-      if (!aoVivo.length) {
-        console.log("⏸️ Sem jogos ao vivo — modo leve")
+      // 🔥 só envia websocket se mudou
+      if (novoHashAoVivo !== ultimoHashAoVivo) {
 
-        intervaloAtual = 5 * 60 * 1000 // 5 min
-        agendar()
-        return
-      }
+        ultimoHashAoVivo = novoHashAoVivo
 
-      // 🔴 3. TEM JOGO AO VIVO → MODO RÁPIDO
-      intervaloAtual = 60 * 1000 // 1 min
-
-      // 🧠 HASH INTELIGENTE
-      const hashAtual = JSON.stringify(
-        aoVivo.map(j => ({
-          id: j.partida_id,
-          m: j.placar_mandante,
-          v: j.placar_visitante,
-          p: j.penalti?.mandante,
-          pv: j.penalti?.visitante,
-          s: j.status
-        }))
-      )
-
-      if (hashAtual !== ultimoHash) {
         emitirEvento({
           tipo: "ao-vivo",
           dados: aoVivo
         })
 
-        ultimoHash = hashAtual
-        console.log("📡 Atualização enviada (mudança detectada)")
-      } else {
-        console.log("⏳ Sem mudanças")
+        console.log("📡 WebSocket AO VIVO enviado")
+      }
+
+      console.log(`🔴 Jogos ao vivo: ${aoVivo.length}`)
+
+      /* ============================
+         🏁 FINALIZADAS
+      ============================ */
+
+      // 🔥 só verifica finalizadas se havia jogo antes
+      if (ultimoHashAoVivo !== "[]") {
+
+        const finalizadas = await buscarTodasFinalizadas()
+
+        const novoHashFinalizadas = gerarHash(finalizadas)
+
+        // 🔥 envia apenas se mudou
+        if (novoHashFinalizadas !== ultimoHashFinalizadas) {
+
+          ultimoHashFinalizadas = novoHashFinalizadas
+
+          emitirEvento({
+            tipo: "encerrados",
+            dados: finalizadas
+          })
+
+          console.log("📡 WebSocket FINALIZADAS enviado")
+        }
       }
 
     } catch (e) {
-      console.error("❌ Erro no job:", e.message)
+
+      console.error("❌ Erro job partidas:", e.message)
     }
 
-    agendar()
+    /* ============================
+       ⏱ TEMPO DINÂMICO
+    ============================ */
+
+    const proximoTempo =
+      aoVivo.length === 0
+        ? 45 * 60 * 1000 // 😴 sem jogos
+        : 3 * 60 * 1000 // 🔴 com jogos
+
+    console.log(
+      `⏱ Próxima atualização em ${proximoTempo / 60000} min`
+    )
+
+    setTimeout(atualizar, proximoTempo)
   }
 
-  function agendar() {
-    setTimeout(executar, intervaloAtual)
-  }
-
-  executar()
+  atualizar()
 }
