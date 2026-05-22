@@ -1,36 +1,31 @@
 import {
   buscarTabelaBrasileirao,
-  buscarTabelaPaulista,
-  buscarTabelaCarioca,
+  buscarTabelaCopaMundo,
   buscarTabelaCopaBrasil
 } from "./tabela.servico.js"
 
 import {
   buscarAgendaBrasileirao,
-  buscarAgendaPaulista,
-  buscarAgendaCarioca,
+  buscarAgendaCopaMundo,
   buscarAgendaCopaBrasil
 } from "./agenda.servico.js"
 
 import {
   buscarBrasileiraoAoVivo,
-  buscarPaulistaAoVivo,
-  buscarCariocaAoVivo,
+  buscarCopaMundoAoVivo,
   buscarCopaBrasilAoVivo
 } from "./partidaLive.servico.js"
 
 import {
   buscarBrasileiraoFinalizadas,
-  buscarPaulistaFinalizadas,
-  buscarCariocaFinalizadas,
+  buscarCopaMundoFinalizadas,
   buscarCopaBrasilFinalizadas,
   buscarTodasFinalizadas
 } from "./partidaFinalizada.servico.js"
 
 import {
   buscarArtilheirosBrasileirao,
-  buscarArtilheirosPaulista,
-  buscarArtilheirosCarioca,
+  buscarArtilheirosCopaMundo,
   buscarArtilheirosCopaBrasil
 } from "./artilheiro.servico.js"
 
@@ -48,20 +43,12 @@ const CAMPEONATOS = {
     artilheiros: buscarArtilheirosBrasileirao
   },
 
-  paulista: {
-    tabela: buscarTabelaPaulista,
-    agenda: buscarAgendaPaulista,
-    aoVivo: buscarPaulistaAoVivo,
-    encerrados: buscarPaulistaFinalizadas,
-    artilheiros: buscarArtilheirosPaulista
-  },
-
-  carioca: {
-    tabela: buscarTabelaCarioca,
-    agenda: buscarAgendaCarioca,
-    aoVivo: buscarCariocaAoVivo,
-    encerrados: buscarCariocaFinalizadas,
-    artilheiros: buscarArtilheirosCarioca
+  copamundo: {
+    tabela: buscarTabelaCopaMundo,
+    agenda: buscarAgendaCopaMundo,
+    aoVivo: buscarCopaMundoAoVivo,
+    encerrados: buscarCopaMundoFinalizadas,
+    artilheiros: buscarArtilheirosCopaMundo
   },
 
   copabrasil: {

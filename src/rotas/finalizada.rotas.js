@@ -2,8 +2,7 @@ import Router from "express"
 import {
   getFinalizadas,
   getFinalizadasBrasileirao,
-  getFinalizadasPaulista,
-  getFinalizadasCarioca,
+  getFinalizadasCopaMundo,
   getFinalizadasCopaBrasil
 } from "../controladores/finalizada.controlador.js"
 
@@ -11,8 +10,7 @@ const router = Router()
 
 router.get("/finalizadas", getFinalizadas)
 router.get("/finalizadas/brasileirao", getFinalizadasBrasileirao)
-router.get("/finalizadas/paulista", getFinalizadasPaulista)
-router.get("/finalizadas/carioca", getFinalizadasCarioca)
+router.get("/finalizadas/copamundo", getFinalizadasCopaMundo)
 router.get("/finalizadas/copabrasil", getFinalizadasCopaBrasil)
 
 export default router

@@ -1,7 +1,6 @@
 import {
   buscarTabelaBrasileirao,
-  buscarTabelaPaulista,
-  buscarTabelaCarioca,
+  buscarTabelaCopaMundo,
   buscarTabelaCopaBrasil
 } from "../servicos/tabela.servico.js"
 
@@ -21,23 +20,11 @@ export async function getTabelaBrasileirao(req, res, next) {
 }
 
 /* =========================================================
-   PAULISTA
+   COPA DO MUNDO
 ========================================================= */
-export async function getTabelaPaulista(req, res, next) {
+export async function getTabelaCopaMundo(req, res, next) {
   try {
-    const tabela = await buscarTabelaPaulista()
-    res.json(tabela)
-  } catch (erro) {
-    next(erro)
-  }
-}
-
-/* =========================================================
-   CARIOCA
-========================================================= */
-export async function getTabelaCarioca(req, res, next) {
-  try {
-    const tabela = await buscarTabelaCarioca()
+    const tabela = await buscarTabelaCopaMundo()
     res.json(tabela)
   } catch (erro) {
     next(erro)

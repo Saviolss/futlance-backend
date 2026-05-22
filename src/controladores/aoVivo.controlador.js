@@ -9,14 +9,6 @@ export function getAoVivo(req, res) {
   })
 }
 
-export function getAoVivoPaulista(req, res) {
-  const partidas = obterTodasPartidasAoVivo()
-
-  res.json({
-    atualizadoEm: new Date().toISOString(),
-    campeonatos: partidas["paulista"] || []
-  })
-}
 
 export function getAoVivoBrasileiro(req, res) {
   const partidas = obterTodasPartidasAoVivo()
@@ -27,11 +19,20 @@ export function getAoVivoBrasileiro(req, res) {
   })
 }
 
-export function getAoVivoCarioca(req, res) {
+export function getAoVivoCopaBrasil(req, res) {
   const partidas = obterTodasPartidasAoVivo()
 
   res.json({
     atualizadoEm: new Date().toISOString(),
-    campeonatos: partidas["carioca"] || []
+    campeonatos: partidas["copabrasil"] || []
+  })
+}
+
+export function getAoVivoCopaMundo(req, res) {
+  const partidas = obterTodasPartidasAoVivo()
+
+  res.json({
+    atualizadoEm: new Date().toISOString(),
+    campeonatos: partidas["copamundo"] || []
   })
 }

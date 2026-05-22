@@ -2,21 +2,18 @@ import cron from "node-cron"
 
 import {
   buscarTabelaBrasileirao,
-  buscarTabelaPaulista,
-  buscarTabelaCarioca,
+  buscarTabelaCopaMundo
 } from "../servicos/tabela.servico.js"
 
 import {
   buscarAgendaBrasileirao,
-  buscarAgendaPaulista,
-  buscarAgendaCarioca,
+  buscarAgendaCopaMundo,
   buscarAgendaCopaBrasil
 } from "../servicos/agenda.servico.js"
 
 import {
   buscarArtilheirosBrasileirao,
-  buscarArtilheirosPaulista,
-  buscarArtilheirosCarioca,
+  buscarArtilheirosCopaMundo,
   buscarArtilheirosCopaBrasil
 } from "../servicos/artilheiro.servico.js"
 

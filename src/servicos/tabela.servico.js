@@ -49,34 +49,66 @@ async function buscarTabelaCampeonato(idCampeonato) {
 
 function normalizarTabela(tabela) {
 
-  /* pontos corridos */
+  /* ============================
+     PONTOS CORRIDOS
+  ============================ */
+
   if (Array.isArray(tabela)) {
+
     return {
       fase: "tabela",
-      dados: tabela.map(normalizarTime)
-    }
-  }
 
-  /* grupos */
-  if (tabela?.grupos) {
-    return {
-      fase: "grupos",
-      dados: Object.entries(tabela.grupos).map(
-        ([nomeGrupo, times]) => ({
-          grupo: nomeGrupo,
-          times: times.map(normalizarTime)
-        })
+      dados: tabela.map(
+        normalizarTime
       )
     }
   }
 
-  /* se paulista/carioca mudarem para mata-mata */
+  /* ============================
+     FASE DE GRUPOS
+  ============================ */
+
+  // 🔥 Copa do Mundo
+  const faseGrupos =
+    tabela?.["fase-de-grupos"]
+
+  if (faseGrupos) {
+
+    return {
+
+      fase: "grupos",
+
+      dados: Object.entries(faseGrupos)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([nomeGrupo, times]) => ({
+
+        grupo:
+          nomeGrupo
+            .replace("grupo-", "")
+            .toUpperCase(),
+
+        times:
+          (times || [])
+            .map(normalizarTime)
+      }))
+    }
+  }
+
+  /* ============================
+     MATA-MATA
+  ============================ */
+
   if (tabela?.fases) {
+
     return {
       fase: "mata-mata",
       dados: []
     }
   }
+
+  /* ============================
+     FALLBACK
+  ============================ */
 
   return {
     fase: null,
@@ -125,15 +157,9 @@ export function buscarTabelaBrasileirao() {
   )
 }
 
-export function buscarTabelaPaulista() {
+export function buscarTabelaCopaMundo() {
   return buscarTabelaCampeonato(
-    CAMPEONATOS.PAULISTA
-  )
-}
-
-export function buscarTabelaCarioca() {
-  return buscarTabelaCampeonato(
-    CAMPEONATOS.CARIOCA
+    CAMPEONATOS.COPAMUNDO
   )
 }
 

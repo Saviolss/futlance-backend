@@ -6,6 +6,7 @@ import { iniciarJobAgenda } from "./jobs/agenda.job.js"
 import { iniciarJobPartidas } from "./jobs/atualizarPartida.job.js"
 import { iniciarJobPartidasAoVivo } from "./jobs/partidasAoVivo.job.js"
 import { gerenciarAoVivo } from "./jobs/gerenciadorAoVivo.job.js"
+import { iniciarJobNoticias } from "./noticias/noticia.job.js"
 import cron from "node-cron"
 import { iniciarWebSocket } from "./websocket/websocket.js"
 import http from "http"
@@ -18,6 +19,7 @@ iniciarJobs()
 iniciarJobAgenda()
 iniciarJobPartidasAoVivo()
 iniciarJobPartidas()
+iniciarJobNoticias()  
 
 dotenv.config()
 

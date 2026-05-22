@@ -1,7 +1,6 @@
 import {
   buscarArtilheirosBrasileirao,
-  buscarArtilheirosPaulista,
-  buscarArtilheirosCarioca,
+  buscarArtilheirosCopaMundo,
   buscarArtilheirosCopaBrasil
 } from "../servicos/artilheiro.servico.js";
 
@@ -21,23 +20,11 @@ export async function getArtilheirosBrasileirao(req, res, next) {
 }
 
 /* =========================================================
-   PAULISTA
+    COPA DO MUNDO
 ========================================================= */
-export async function getArtilheirosPaulista(req, res, next) {
+export async function getArtilheirosCopaMundo(req, res, next) {
   try {
-    const artilheiros = await buscarArtilheirosPaulista();
-    res.json(artilheiros);
-  } catch (erro) {
-    next(erro);
-  }
-}
-
-/* =========================================================
-   CARIOCA
-========================================================= */
-export async function getArtilheirosCarioca(req, res, next) {
-  try {
-    const artilheiros = await buscarArtilheirosCarioca();
+    const artilheiros = await buscarArtilheirosCopaMundo();
     res.json(artilheiros);
   } catch (erro) {
     next(erro);

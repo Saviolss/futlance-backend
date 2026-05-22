@@ -93,15 +93,9 @@ export function buscarArtilheirosBrasileirao() {
   )
 }
 
-export function buscarArtilheirosPaulista() {
+export function buscarArtilheirosCopaMundo() {
   return buscarArtilheirosCampeonato(
-    CAMPEONATOS.PAULISTA
-  )
-}
-
-export function buscarArtilheirosCarioca() {
-  return buscarArtilheirosCampeonato(
-    CAMPEONATOS.CARIOCA
+    CAMPEONATOS.COPAMUNDO
   )
 }
 

@@ -1,8 +1,7 @@
 import {
   buscarTodasFinalizadas,
   buscarBrasileiraoFinalizadas,
-  buscarPaulistaFinalizadas,
-  buscarCariocaFinalizadas,
+  buscarCopaMundoFinalizadas,
   buscarCopaBrasilFinalizadas
 } from "../servicos/partidaFinalizada.servico.js"
 
@@ -28,23 +27,14 @@ export async function getFinalizadasBrasileirao(req, res, next) {
   }
 }
 
-export async function getFinalizadasPaulista(req, res, next) {
+export async function getFinalizadasCopaMundo(req, res, next) {
   try {
-    const partidas = await buscarPaulistaFinalizadas()
+    const partidas = await buscarCopaMundoFinalizadas()
     res.json(partidas)
   } catch (err) {
     next(err)
   }
-}
-
-export async function getFinalizadasCarioca(req, res, next) {
-  try {
-    const partidas = await buscarCariocaFinalizadas()
-    res.json(partidas)
-  } catch (err) {
-    next(err)
-  }
-}
+} 
 
 export async function getFinalizadasCopaBrasil(req, res, next) {
   try {

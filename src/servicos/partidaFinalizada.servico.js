@@ -84,21 +84,18 @@ function normalizarPartidaFinalizada(p) {
 export async function buscarTodasFinalizadas() {
   const [
     brasileirao,
-    paulista,
-    carioca,
-    copaBrasil
+    copaBrasil,
+    copaMundo
   ] = await Promise.allSettled([
     buscarBrasileiraoFinalizadas(),
-    buscarPaulistaFinalizadas(),
-    buscarCariocaFinalizadas(),
-    buscarCopaBrasilFinalizadas()
+    buscarCopaBrasilFinalizadas(),
+    buscarCopaMundoFinalizadas()
   ])
 
   return [
     ...(brasileirao.status === "fulfilled" ? brasileirao.value : []),
-    ...(paulista.status === "fulfilled" ? paulista.value : []),
-    ...(carioca.status === "fulfilled" ? carioca.value : []),
-    ...(copaBrasil.status === "fulfilled" ? copaBrasil.value : [])
+    ...(copaBrasil.status === "fulfilled" ? copaBrasil.value : []),
+    ...(copaMundo.status === "fulfilled" ? copaMundo.value : [])
   ]
 }
 
@@ -109,12 +106,8 @@ export function buscarBrasileiraoFinalizadas() {
   return buscarFinalizadasCampeonato(CAMPEONATOS.BRASILEIRAO)
 }
 
-export function buscarPaulistaFinalizadas() {
-  return buscarFinalizadasCampeonato(CAMPEONATOS.PAULISTA)
-}
-
-export function buscarCariocaFinalizadas() {
-  return buscarFinalizadasCampeonato(CAMPEONATOS.CARIOCA)
+export function buscarCopaMundoFinalizadas() {
+  return buscarFinalizadasCampeonato(CAMPEONATOS.COPAMUNDO)
 }
 
 export function buscarCopaBrasilFinalizadas() {

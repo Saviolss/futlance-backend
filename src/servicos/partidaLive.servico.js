@@ -45,12 +45,8 @@ export function buscarBrasileiraoAoVivo() {
   return buscarPartidasAoVivoCampeonato(CAMPEONATOS.BRASILEIRAO)
 }
 
-export function buscarPaulistaAoVivo() {
-  return buscarPartidasAoVivoCampeonato(CAMPEONATOS.PAULISTA)
-}
-
-export function buscarCariocaAoVivo() {
-  return buscarPartidasAoVivoCampeonato(CAMPEONATOS.CARIOCA)
+export function buscarCopaMundoAoVivo() {
+  return buscarPartidasAoVivoCampeonato(CAMPEONATOS.COPAMUNDO)
 }
 
 export function buscarCopaBrasilAoVivo() {
