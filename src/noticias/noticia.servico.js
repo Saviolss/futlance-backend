@@ -6,7 +6,10 @@ import {
 } from "../cache/cacheMemoria.js"
 
 const CACHE_TTL =
-  60 * 60 * 1000 // 1h
+  30 * 60 * 1000 // 30 min
+
+const CACHE_KEY =
+  "noticias:futebol"
 
 /* ======================================================
    NORMALIZAÇÃO
@@ -28,7 +31,8 @@ function normalizarNoticia(noticia) {
       null,
 
     fonte:
-      noticia.source || "Desconhecida",
+      noticia.source ||
+      "Desconhecida",
 
     url:
       noticia.url || "#",
@@ -45,39 +49,21 @@ function normalizarNoticia(noticia) {
 }
 
 /* ======================================================
-   BUSCAR NOTÍCIAS
+   BUSCA API
 ====================================================== */
 
-export async function buscarNoticias() {
-
-  const chave =
-    "noticias:futebol"
-
-  const cache =
-    getCache(chave)
-
-  if (cache) {
-
-    console.log("📰 notícias cache")
-
-    return cache
-  }
+async function buscarNoticiasDaApi() {
 
   console.log("🌍 buscando notícias API")
 
   const resposta =
     await buscarNoticiasApi({
 
-      locale: "br",
+      search: "futebol",
 
-      search:
-        "futebol",
+      categories: "sports",
 
-      categories:
-        "sports",
-
-      sort:
-        "published_at",
+      sort: "published_at",
 
       limit: 3
     })
@@ -87,12 +73,43 @@ export async function buscarNoticias() {
     (resposta.data || [])
       .map(normalizarNoticia)
 
+  console.log(
+    `📰 notícias encontradas: ${noticias.length}`
+  )
 
   setCache(
-    chave,
+    CACHE_KEY,
     noticias,
     CACHE_TTL
   )
 
   return noticias
+}
+
+/* ======================================================
+   BUSCA NORMAL
+====================================================== */
+
+export async function buscarNoticias() {
+
+  const cache =
+    getCache(CACHE_KEY)
+
+  if (cache) {
+
+    console.log("📰 notícias cache")
+
+    return cache
+  }
+
+  return buscarNoticiasDaApi()
+}
+
+/* ======================================================
+   FORÇA ATUALIZAÇÃO
+====================================================== */
+
+export async function atualizarNoticias() {
+
+  return buscarNoticiasDaApi()
 }

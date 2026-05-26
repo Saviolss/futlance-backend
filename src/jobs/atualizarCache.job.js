@@ -26,8 +26,6 @@ export function iniciarJobs() {
       console.log("🔄 Atualizando cache das tabelas...")
       await Promise.all([
         buscarTabelaBrasileirao(),
-        buscarTabelaPaulista(),
-        buscarTabelaCarioca(),
       ])
 
       console.log("✅ Tabelas atualizadas")
@@ -45,8 +43,7 @@ export function iniciarJobs() {
 
       await Promise.all([
         buscarAgendaBrasileirao(),
-        buscarAgendaPaulista(),
-        buscarAgendaCarioca(),
+        buscarAgendaCopaMundo(),
         buscarAgendaCopaBrasil(),
       ])
 
@@ -65,8 +62,7 @@ export function iniciarJobs() {
 
       await Promise.all([
         buscarArtilheirosBrasileirao(),
-        buscarArtilheirosPaulista(),
-        buscarArtilheirosCarioca(),
+        buscarArtilheirosCopaMundo(),
         buscarArtilheirosCopaBrasil(),
       ]);
 
