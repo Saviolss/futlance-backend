@@ -1,18 +1,23 @@
-import { buscarNoticias } from "./noticia.servico.js"
- 
+import {
+  atualizarNoticias
+} from "./noticia.servico.js"
+
 /* ======================================================
-   ⚽ JOB DE NOTÍCIAS
+   JOB NOTÍCIAS
 ====================================================== */
 
 export function iniciarJobNoticias() {
 
-  console.log("📰 Job de notícias inicializado")
+  console.log(
+    "📰 Job de notícias inicializado"
+  )
 
   async function atualizar() {
 
     try {
 
-      const noticias = await buscarNoticias()
+      const noticias =
+        await atualizarNoticias()
 
       console.log(
         `📰 Notícias atualizadas: ${noticias.length}`
@@ -26,16 +31,13 @@ export function iniciarJobNoticias() {
       )
     }
 
-    /* ======================================================
-       🔥 ECONOMIA DE REQUISIÇÕES
-       
-       1 req a cada 30 min
-       = 48 req por dia
-    ====================================================== */
+    /* ==========================================
+       48 req/dia
+    ========================================== */
 
     setTimeout(
       atualizar,
-      30 * 60 * 1000
+      30 * 60 * 1000 // 30 min
     )
   }
 

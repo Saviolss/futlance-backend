@@ -2,7 +2,7 @@ import axios from "axios"
 
 const apiNoticias = axios.create({
   baseURL: "https://api.thenewsapi.com/v1",
-  timeout: 10000,
+  timeout: 50000,
 })
 
 async function requestApiNoticias(url, params, mensagemErro) {

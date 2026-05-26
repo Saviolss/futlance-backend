@@ -18,10 +18,6 @@ async function buscarArtilheirosCampeonato(idCampeonato) {
     idCampeonato
   )
 
-  console.log(
-    "ARTILHEIROS RAW:",
-    JSON.stringify(artilheiros, null, 2)
-  )
 
   const normalizada = normalizarArtilheiros(artilheiros)
 
