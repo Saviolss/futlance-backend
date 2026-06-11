@@ -116,3 +116,27 @@ export async function buscarPartidaApi(partidaId) {
     return null
   }
 }
+
+/* =========================================================
+   TIMES
+========================================================= */
+
+export function buscarTimeApi(timeId) {
+  return requestApiFutebol(
+    `/times/${timeId}`,
+    "Erro ao buscar informações do time"
+  )
+}
+
+export function buscarProximasPartidasTimeApi(timeId) {
+  return requestApiFutebol(
+    `/times/${timeId}/partidas/proximas`,
+    "Erro ao buscar próximas partidas do time"
+  )
+}
+export function buscarElencosCopaApi(idCampeonato) {
+  return requestApiFutebol(
+    `/campeonatos/${idCampeonato}/elencos`,
+    "Erro ao buscar elencos da Copa"
+  )
+}
