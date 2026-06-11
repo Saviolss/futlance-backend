@@ -15,6 +15,7 @@ import encerradasRotas from "./rotas/finalizada.rotas.js"
 import campeonatosRotas from "./rotas/campeonatos.rotas.js"
 import artilheiroRotas from "./rotas/artilheiro.rota.js"
 import noticia from "./noticias/noticia.rotas.js"
+import time from "./rotas/time.rotas.js"
 
 // Carrega variáveis de ambiente
 dotenv.config()
@@ -62,6 +63,7 @@ app.use("/api", encerradasRotas)
 app.use("/campeonatos", campeonatosRotas)
 app.use("/artilheiros", artilheiroRotas)
 app.use("/home", noticia) 
+app.use("/api", time)
 /* ============================
    TRATAMENTO DE ERROS
 ============================ */

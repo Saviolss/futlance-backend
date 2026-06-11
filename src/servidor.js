@@ -7,8 +7,9 @@ import { iniciarJobPartidas } from "./jobs/atualizarPartida.job.js"
 import { iniciarJobPartidasAoVivo } from "./jobs/partidasAoVivo.job.js"
 import { gerenciarAoVivo } from "./jobs/gerenciadorAoVivo.job.js"
 import { iniciarJobNoticias } from "./noticias/noticia.job.js"
-import cron from "node-cron"
 import { iniciarWebSocket } from "./websocket/websocket.js"
+import { iniciarJobTimes } from "./jobs/time.job.js"
+import cron from "node-cron"
 import http from "http"
 
 cron.schedule("*/5 * * * *", gerenciarAoVivo)
@@ -19,7 +20,8 @@ iniciarJobs()
 iniciarJobAgenda()
 iniciarJobPartidasAoVivo()
 iniciarJobPartidas()
-iniciarJobNoticias()  
+iniciarJobNoticias() 
+iniciarJobTimes() 
 
 dotenv.config()
 
