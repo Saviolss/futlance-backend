@@ -4,7 +4,7 @@ import { getCache, setCache } from "../cache/cacheMemoria.js"
 import { CACHE_TTL } from "../constantes/cacheTTL.js"
 
 export function iniciarJobAgenda() {
-  cron.schedule("0 */12 * * *", executarJobAgenda)
+  cron.schedule("0 */6 * * *", executarJobAgenda) // 6 horas
 }
 
 async function executarJobAgenda() {

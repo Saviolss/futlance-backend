@@ -183,7 +183,7 @@ export function iniciarJobPartidas() {
           ? 1 * 60 * 1000
 
           // 🔴 jogos normais
-          : 3 * 60 * 1000
+          : 2 * 60 * 1000
 
     /* ============================
        LOG
@@ -204,7 +204,7 @@ export function iniciarJobPartidas() {
     } else {
 
       console.log(
-        "🔴 Jogos ao vivo — atualização 3 min"
+        "🔴 Jogos ao vivo — atualização 2 min"
       )
     }
 
