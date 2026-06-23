@@ -268,11 +268,11 @@ export function iniciarJobTimes() {
     }
 
     /* =====================================
-       12 HORAS
+       24 HORAS
     ===================================== */
 
     const proximaAtualizacao =
-      12 * 60 * 60 * 1000
+      24 * 60 * 60 * 1000
 
     console.log(
       `⏱ Próxima atualização em ${proximaAtualizacao / 3600000
