@@ -15,9 +15,13 @@ import { CACHE_TTL } from "../constantes/cacheTTL.js"
 import { detectarEventosPartida } from "./detectarEventosPartida.js"
 
 const STATUS_VALIDO = ["andamento", "disputa_penaltis"]
+let jobAoVivoAtivo = false
 
 export function iniciarJobPartidasAoVivo() {
-  cron.schedule("*/45 * * * * *", async () => {
+  if (jobAoVivoAtivo) return
+  jobAoVivoAtivo = true
+
+  cron.schedule("0 */2 * * * *", async () => {
     try {
       for (const idCampeonato of Object.values(CAMPEONATOS)) {
         const partidasAoVivo = obterPartidasAoVivo(idCampeonato)

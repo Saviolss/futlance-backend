@@ -14,6 +14,8 @@ import {
 
 let ultimoHashAoVivo = ""
 let ultimoHashFinalizadas = ""
+let ultimaAtualizacaoFinalizadas = 0
+const INTERVALO_FINALIZADAS = 15 * 60 * 1000
 
 /* ======================================================
    GERA HASH
@@ -121,11 +123,15 @@ export function iniciarJobPartidas() {
          🏁 FINALIZADAS
       ============================ */
 
-      // 🔥 só verifica finalizadas
-      // se havia jogos ao vivo
+      // 🔥 só verifica finalizadas se havia jogos ao vivo
+      // e pelo menos 15 minutos desde a última checagem
+      const agora = Date.now()
       if (
-        ultimoHashAoVivo !== "[]"
+        ultimoHashAoVivo !== "[]" &&
+        agora - ultimaAtualizacaoFinalizadas >= INTERVALO_FINALIZADAS
       ) {
+
+        ultimaAtualizacaoFinalizadas = agora
 
         const finalizadas =
           await buscarTodasFinalizadas()
