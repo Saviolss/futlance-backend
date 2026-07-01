@@ -1,4 +1,3 @@
-import cron from "node-cron"
 import { emitirEvento } from "../websocket/websocket.js"
 
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
@@ -15,94 +14,92 @@ import { CACHE_TTL } from "../constantes/cacheTTL.js"
 import { detectarEventosPartida } from "./detectarEventosPartida.js"
 
 const STATUS_VALIDO = ["andamento", "disputa_penaltis"]
-let jobAoVivoAtivo = false
 
-export function iniciarJobPartidasAoVivo() {
-  if (jobAoVivoAtivo) return
-  jobAoVivoAtivo = true
+export async function iniciarJobPartidasAoVivo() {
+  await verificarPartidasAoVivo()
+}
 
-  cron.schedule("0 */2 * * * *", async () => {
-    try {
-      for (const idCampeonato of Object.values(CAMPEONATOS)) {
-        const partidasAoVivo = obterPartidasAoVivo(idCampeonato)
+export async function verificarPartidasAoVivo() {
+  try {
+    for (const idCampeonato of Object.values(CAMPEONATOS)) {
+      const partidasAoVivo = obterPartidasAoVivo(idCampeonato)
 
-        if (!Array.isArray(partidasAoVivo) || partidasAoVivo.length === 0) {
+      if (!Array.isArray(partidasAoVivo) || partidasAoVivo.length === 0) {
+        continue
+      }
+
+      for (const partida of partidasAoVivo) {
+
+        // ❌ Remove partidas que não estão mais ativas
+        if (!STATUS_VALIDO.includes(partida.status)) {
+          removerPartidaAoVivo(idCampeonato, partida.partida_id)
+          deleteCache(`partida:${partida.partida_id}`)
           continue
         }
 
-        for (const partida of partidasAoVivo) {
+        const chave = `partida:${partida.partida_id}`
+        const anterior = getCache(chave)
 
-          // ❌ Remove partidas que não estão mais ativas
-          if (!STATUS_VALIDO.includes(partida.status)) {
-            removerPartidaAoVivo(idCampeonato, partida.partida_id)
-            deleteCache(`partida:${partida.partida_id}`)
-            continue
-          }
+        // ⏱️ Respeita TTL antes de chamar API
+        const atual = await buscarPartidaApi(partida.partida_id)
+        if (!atual) continue
 
-          const chave = `partida:${partida.partida_id}`
-          const anterior = getCache(chave)
+        const {
+          gol,
+          golMandante,
+          golVisitante,
+          fimDeJogo
+        } = detectarEventosPartida(atual, anterior)
 
-          // ⏱️ Respeita TTL antes de chamar API
-          const atual = await buscarPartidaApi(partida.partida_id)
-          if (!atual) continue
+        // 🔄 Atualiza cache SEMPRE após consulta
+        setCache(chave, atual, CACHE_TTL.PARTIDA)
 
-          const {
-            gol,
-            golMandante,
-            golVisitante,
-            fimDeJogo
-          } = detectarEventosPartida(atual, anterior)
+        // ⚽ Eventos de gol
+        if (golMandante) {
+          emitirEvento({
+            tipo: "GOL_MANDANTE",
+            campeonato: idCampeonato,
+            partidaId: partida.partida_id,
+            dados: {
+              time: atual.time_mandante,
+              placar: atual.placar
+            }
+          })
+        }
 
-          // 🔄 Atualiza cache SEMPRE após consulta
-          setCache(chave, atual, CACHE_TTL.PARTIDA)
+        if (golVisitante) {
+          emitirEvento({
+            tipo: "GOL_VISITANTE",
+            campeonato: idCampeonato,
+            partidaId: partida.partida_id,
+            dados: {
+              time: atual.time_visitante,
+              placar: atual.placar
+            }
+          })
+        }
 
-          // ⚽ Eventos de gol
-          if (golMandante) {
-            emitirEvento({
-              tipo: "GOL_MANDANTE",
-              campeonato: idCampeonato,
-              partidaId: partida.partida_id,
-              dados: {
-                time: atual.time_mandante,
-                placar: atual.placar
-              }
-            })
-          }
+        // 🏁 Fim de jogo
+        if (fimDeJogo) {
+          emitirEvento({
+            tipo: "finalizado",
+            campeonato: idCampeonato,
+            partidaId: partida.partida_id
+          })
 
-          if (golVisitante) {
-            emitirEvento({
-              tipo: "GOL_VISITANTE",
-              campeonato: idCampeonato,
-              partidaId: partida.partida_id,
-              dados: {
-                time: atual.time_visitante,
-                placar: atual.placar
-              }
-            })
-          }
+          removerPartidaAoVivo(idCampeonato, partida.partida_id)
+          deleteCache(chave)
+        }
 
-          // 🏁 Fim de jogo
-          if (fimDeJogo) {
-            emitirEvento({
-              tipo: "finalizado",
-              campeonato: idCampeonato,
-              partidaId: partida.partida_id
-            })
-
-            removerPartidaAoVivo(idCampeonato, partida.partida_id)
-            deleteCache(chave)
-          }
-
-          // 🔄 Atualiza tabela apenas se houve evento
-          if (gol || fimDeJogo) {
-            await atualizarTabelaCampeonato(idCampeonato)
-            deleteCache(`ao-vivo:${idCampeonato}`)
-            deleteCache("ao-vivo:todas")
-          }
+        // 🔄 Atualiza tabela apenas se houve evento
+        if (gol || fimDeJogo) {
+          await atualizarTabelaCampeonato(idCampeonato)
+          deleteCache(`ao-vivo:${idCampeonato}`)
+          deleteCache("ao-vivo:todas")
         }
       }
-    } catch (erro) {
-      console.error("❌ Job partidas ao vivo:", erro.message)
     }
-  })
+  } catch (erro) {
+    console.error("❌ Job partidas ao vivo:", erro.message)
+  }
 }

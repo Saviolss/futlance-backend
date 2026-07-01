@@ -8,6 +8,10 @@ import {
   buscarTodasFinalizadas
 } from "../servicos/partidaFinalizada.servico.js"
 
+import {
+  verificarPartidasAoVivo
+} from "./partidasAoVivo.job.js"
+
 /* ======================================================
    CACHE LOCAL
 ====================================================== */
@@ -90,6 +94,10 @@ export function iniciarJobPartidas() {
 
       aoVivo =
         await buscarTodasAoVivo()
+
+      if (aoVivo.length > 0) {
+        await verificarPartidasAoVivo()
+      }
 
       const novoHashAoVivo =
         gerarHash(aoVivo)
