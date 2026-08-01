@@ -1,7 +1,8 @@
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
 import { artilheirosCampeonatoApi } from "./apiFutebol.servico.js"
-import { getCache, setCache } from "../cache/cacheMemoria.js"
-import { CACHE_TTL } from "../constantes/cacheTTL.js"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 /* =========================================================
    FUNÇÃO BASE
@@ -9,45 +10,180 @@ import { CACHE_TTL } from "../constantes/cacheTTL.js"
 
 async function buscarArtilheirosCampeonato(idCampeonato) {
 
-  const chaveCache = `artilheiros:${idCampeonato}`
+  try {
 
-  const cache = getCache(chaveCache)
-  if (cache) return cache
+    const artilheiros = await prisma.artilheiro.findMany({
 
-  const artilheiros = await artilheirosCampeonatoApi(
-    idCampeonato
-  )
+      where: {
+        campeonato_id: idCampeonato
+      },
 
+      orderBy: {
+        gols: "desc"
+      }
 
-  const normalizada = normalizarArtilheiros(artilheiros)
+    })
 
-  const resposta = {
-    tipo: "artilheiros",
-    ...normalizada
+    return {
+
+      tipo: "artilheiros",
+
+      dados: artilheiros.map(artilheiro => ({
+
+        jogador_id: artilheiro.jogador_id,
+
+        nome: artilheiro.nome,
+
+        clube: {
+
+          nome: artilheiro.clube_nome,
+
+          escudo: artilheiro.clube_escudo
+
+        },
+
+        gols: artilheiro.gols
+
+      }))
+
+    }
+
+  } catch (erro) {
+
+    console.error(
+
+      `❌ Erro ao buscar artilharia ${idCampeonato}:`,
+
+      erro.message
+
+    )
+
+    return {
+
+      tipo: "artilheiros",
+
+      dados: []
+
+    }
+
   }
 
-  setCache(
-    chaveCache,
-    resposta,
-    CACHE_TTL.ARTILHEIROS
-  )
-
-  return resposta
 }
 
+export async function atualizarArtilhariaCampeonato(
+  idCampeonato
+) {
+
+  try {
+
+    const resposta = await artilheirosCampeonatoApi(idCampeonato)
+
+    const lista = normalizarArtilheiros(resposta).dados
+
+
+
+    for (const jogador of lista) {
+
+      await prisma.artilheiro.upsert({
+
+        where: {
+
+          campeonato_id_jogador_id: {
+
+            campeonato_id: idCampeonato,
+
+            jogador_id: jogador.jogador_id
+
+          }
+
+        },
+
+        update: {
+
+          campeonato_id: idCampeonato,
+
+          nome: jogador.nome,
+
+          clube_nome: jogador.clube.nome,
+
+          clube_escudo: jogador.clube.escudo,
+
+          gols: jogador.gols
+
+        },
+
+        create: {
+
+          jogador_id: jogador.jogador_id,
+
+          campeonato_id: idCampeonato,
+
+          nome: jogador.nome,
+
+          clube_nome: jogador.clube.nome,
+
+          clube_escudo: jogador.clube.escudo,
+
+          gols: jogador.gols
+
+        }
+
+      })
+
+    }
+
+    const ids = lista.map(j => j.jogador_id)
+
+    await prisma.artilheiro.deleteMany({
+
+      where: {
+
+        campeonato_id: idCampeonato,
+
+        jogador_id: {
+          notIn: ids
+        }
+
+      }
+
+    })
+
+    console.log(`✅ Artilharia ${idCampeonato} atualizada`)
+
+  } catch (erro) {
+
+    console.error(
+      "❌ Erro ao atualizar artilharia:",
+      erro.message
+    )
+
+  }
+
+}
 /* =========================================================
    NORMALIZA LISTA
 ========================================================= */
 
 function normalizarArtilheiros(payload) {
 
-  const lista =
-    payload?.artilheiros ||
-    payload?.dados ||
-    payload
+  let lista = []
 
-  if (!Array.isArray(lista)) {
-    return { dados: [] }
+  if (Array.isArray(payload)) {
+
+    lista = payload
+
+  } else if (Array.isArray(payload?.artilheiros)) {
+
+    lista = payload.artilheiros
+
+  } else if (Array.isArray(payload?.dados)) {
+
+    lista = payload.dados
+
+  } else if (Array.isArray(payload?.data)) {
+
+    lista = payload.data
+
   }
 
   return {

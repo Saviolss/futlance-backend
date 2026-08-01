@@ -1,15 +1,7 @@
 import { buscarNoticiasApi } from "./noticiaApi.js"
+import { PrismaClient } from "@prisma/client"
 
-import {
-  getCache,
-  setCache
-} from "../cache/cacheMemoria.js"
-
-const CACHE_TTL =
-  30 * 60 * 1000 // 30 min
-
-const CACHE_KEY =
-  "noticias:futebol"
+const prisma = new PrismaClient()
 
 /* ======================================================
    NORMALIZAÇÃO
@@ -52,12 +44,13 @@ function normalizarNoticia(noticia) {
    BUSCA API
 ====================================================== */
 
-async function buscarNoticiasDaApi() {
+export async function atualizarNoticias() {
 
-  console.log("🌍 buscando notícias API")
+  try {
 
-  const resposta =
-    await buscarNoticiasApi({
+    console.log("🌍 Buscando notícias da API...")
+
+    const resposta = await buscarNoticiasApi({
 
       search: "futebol",
 
@@ -66,50 +59,148 @@ async function buscarNoticiasDaApi() {
       sort: "published_at",
 
       limit: 3
+
     })
 
-
-  const noticias =
-    (resposta.data || [])
+    const noticias = (resposta.data || [])
       .map(normalizarNoticia)
 
-  console.log(
-    `📰 notícias encontradas: ${noticias.length}`
-  )
+    for (const noticia of noticias) {
 
-  setCache(
-    CACHE_KEY,
-    noticias,
-    CACHE_TTL
-  )
+      await prisma.noticia.upsert({
 
-  return noticias
+        where: {
+
+          url: noticia.url
+
+        },
+
+        update: {
+
+          titulo: noticia.titulo,
+
+          descricao: noticia.descricao,
+
+          imagem: noticia.imagem,
+
+          fonte: noticia.fonte,
+
+          data: noticia.data
+            ? new Date(noticia.data)
+            : null,
+
+          categoria: noticia.categoria,
+
+          autor: noticia.autor
+
+        },
+
+        create: {
+
+          titulo: noticia.titulo,
+
+          descricao: noticia.descricao,
+
+          imagem: noticia.imagem,
+
+          fonte: noticia.fonte,
+
+          url: noticia.url,
+
+          data: noticia.data
+            ? new Date(noticia.data)
+            : null,
+
+          categoria: noticia.categoria,
+
+          autor: noticia.autor
+
+        }
+
+      })
+
+    }
+
+    const urls = noticias.map(n => n.url)
+
+    await prisma.noticia.deleteMany({
+
+      where: {
+
+        url: {
+
+          notIn: urls
+
+        }
+
+      }
+
+    })
+
+    console.log("✅ Notícias atualizadas")
+
+  } catch (erro) {
+
+    console.error(
+      "❌ Erro ao atualizar notícias:",
+      erro.message
+    )
+
+  }
+
 }
 
 /* ======================================================
-   BUSCA NORMAL
+   BUSCA DO BANCO
 ====================================================== */
 
 export async function buscarNoticias() {
 
-  const cache =
-    getCache(CACHE_KEY)
+  try {
 
-  if (cache) {
+    const noticias = await prisma.noticia.findMany({
 
-    console.log("📰 notícias cache")
+      orderBy: {
 
-    return cache
+        data: "desc"
+
+      }
+
+    })
+
+    return noticias.map(noticia => ({
+
+      titulo: noticia.titulo,
+
+      descricao: noticia.descricao,
+
+      imagem: noticia.imagem,
+
+      fonte: noticia.fonte,
+
+      url: noticia.url,
+
+      data: noticia.data,
+
+      categoria: noticia.categoria,
+
+      autor: noticia.autor
+
+    }))
+
+  } catch (erro) {
+
+    console.error(
+
+      "❌ Erro ao buscar notícias:",
+
+      erro.message
+
+    )
+
+    return []
+
   }
 
-  return buscarNoticiasDaApi()
 }
 
-/* ======================================================
-   FORÇA ATUALIZAÇÃO
-====================================================== */
-
-export async function atualizarNoticias() {
-
-  return buscarNoticiasDaApi()
-}

@@ -1,8 +1,8 @@
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
 import { buscarTabelaApi } from "./apiFutebol.servico.js"
+import { PrismaClient } from "@prisma/client"
 
-import { getCache, setCache } from "../cache/cacheMemoria.js"
-import { CACHE_TTL } from "../constantes/cacheTTL.js"
+const prisma = new PrismaClient()
 
 /* =========================================================
    FUNÇÃO BASE
@@ -10,36 +10,459 @@ import { CACHE_TTL } from "../constantes/cacheTTL.js"
 
 async function buscarTabelaCampeonato(idCampeonato) {
 
-  const chaveCache = `tabela:${idCampeonato}`
+  try {
 
-  const cache = getCache(chaveCache)
-  if (cache) return cache
+    /* Copa do Brasil continua sem tabela */
+    if (idCampeonato === CAMPEONATOS.COPABRASIL) {
 
+      return {
 
-  /* Copa do Brasil não possui endpoint tabela */
-  if (idCampeonato === CAMPEONATOS.COPABRASIL) {
+        tipo: "campeonatos",
+
+        fase: null,
+
+        dados: []
+
+      }
+
+    }
+
+    const tabela = await prisma.tabela.findMany({
+
+      where: {
+
+        campeonato_id: idCampeonato
+
+      },
+
+      orderBy: [
+        
+        { fase: "asc" },
+
+        { grupo: "asc" },
+
+        { posicao: "asc" }
+
+      ]
+
+    })
+
+    if (!tabela.length) {
+
+      return {
+
+        tipo: "campeonatos",
+
+        fase: null,
+
+        dados: []
+
+      }
+
+    }
+
+    /* ============================
+       FASE DE GRUPOS
+    ============================ */
+
+    const possuiGrupos = tabela.some(time => time.grupo)
+
+    if (possuiGrupos) {
+
+      const grupos = {}
+
+      for (const time of tabela) {
+
+        if (!grupos[time.grupo]) {
+
+          grupos[time.grupo] = []
+
+        }
+
+        grupos[time.grupo].push({
+
+          time_id: time.time_id,
+
+          nome: time.nome,
+
+          escudo: time.escudo,
+
+          posicao: time.posicao,
+
+          pontos: time.pontos,
+
+          jogos: time.jogos,
+
+          vitorias: time.vitorias,
+
+          empates: time.empates,
+
+          derrotas: time.derrotas,
+
+          gols_pro: time.gols_pro,
+
+          gols_contra: time.gols_contra,
+
+          saldo_gols: time.saldo_gols,
+
+          aproveitamento: time.aproveitamento
+
+        })
+
+      }
+
+      return {
+
+        tipo: "campeonatos",
+
+        fase: "grupos",
+
+        dados: Object.entries(grupos).map(
+
+          ([grupo, times]) => ({
+
+            grupo,
+
+            times
+
+          })
+
+        )
+
+      }
+
+    }
+
+    /* ============================
+       PONTOS CORRIDOS
+    ============================ */
 
     return {
+
       tipo: "campeonatos",
-      fase: null,
-      dados: []
+
+      fase: "tabela",
+
+      dados: tabela.map(time => ({
+
+        time_id: time.time_id,
+
+        nome: time.nome,
+
+        escudo: time.escudo,
+
+        posicao: time.posicao,
+
+        pontos: time.pontos,
+
+        jogos: time.jogos,
+
+        vitorias: time.vitorias,
+
+        empates: time.empates,
+
+        derrotas: time.derrotas,
+
+        gols_pro: time.gols_pro,
+
+        gols_contra: time.gols_contra,
+
+        saldo_gols: time.saldo_gols,
+
+        aproveitamento: time.aproveitamento
+
+      }))
+
     }
+
+  } catch (erro) {
+
+    console.error(
+
+      `❌ Erro ao buscar tabela ${idCampeonato}:`,
+
+      erro.message
+
+    )
+
+    return {
+
+      tipo: "campeonatos",
+
+      fase: null,
+
+      dados: []
+
+    }
+
   }
 
-  const tabela = await buscarTabelaApi(idCampeonato)
+}
 
-  const resposta = {
-    tipo: "campeonatos",
-    ...normalizarTabela(tabela)
+export async function atualizarTabelaCampeonato(idCampeonato) {
+
+  try {
+
+    /* Copa do Brasil não possui tabela */
+
+    if (idCampeonato === CAMPEONATOS.COPABRASIL) {
+      return
+    }
+
+    const tabelaApi =
+      await buscarTabelaApi(idCampeonato)
+
+    const tabela =
+      normalizarTabela(tabelaApi)
+
+    /* ============================
+       PONTOS CORRIDOS
+    ============================ */
+
+    if (tabela.fase === "tabela") {
+
+      for (const time of tabela.dados) {
+
+        await prisma.tabela.upsert({
+
+          where: {
+
+            campeonato_id_time_id: {
+
+              campeonato_id: idCampeonato,
+
+              time_id: time.time_id
+
+            }
+
+          },
+
+          update: {
+
+            nome: time.nome,
+
+            escudo: time.escudo,
+
+            posicao: time.posicao,
+
+            pontos: time.pontos,
+
+            jogos: time.jogos,
+
+            vitorias: time.vitorias,
+
+            empates: time.empates,
+
+            derrotas: time.derrotas,
+
+            gols_pro: time.gols_pro,
+
+            gols_contra: time.gols_contra,
+
+            saldo_gols: time.saldo_gols,
+
+            aproveitamento: time.aproveitamento,
+
+            grupo: null,
+
+            fase: "tabela"
+
+          },
+
+          create: {
+
+            campeonato_id: idCampeonato,
+
+            time_id: time.time_id,
+
+            nome: time.nome,
+
+            escudo: time.escudo,
+
+            posicao: time.posicao,
+
+            pontos: time.pontos,
+
+            jogos: time.jogos,
+
+            vitorias: time.vitorias,
+
+            empates: time.empates,
+
+            derrotas: time.derrotas,
+
+            gols_pro: time.gols_pro,
+
+            gols_contra: time.gols_contra,
+
+            saldo_gols: time.saldo_gols,
+
+            aproveitamento: time.aproveitamento,
+
+            grupo: null,
+
+            fase: "tabela"
+
+          }
+
+        })
+
+      }
+
+      const ids = tabela.dados.map(time => time.time_id)
+
+      await prisma.tabela.deleteMany({
+
+        where: {
+
+          campeonato_id: idCampeonato,
+
+          time_id: {
+
+            notIn: ids
+
+          }
+
+        }
+
+      })
+
+    }
+
+    /* ============================
+       FASE DE GRUPOS
+    ============================ */
+
+    if (tabela.fase === "grupos") {
+
+      const ids = []
+
+      for (const grupo of tabela.dados) {
+
+        for (const time of grupo.times) {
+
+          ids.push(time.time_id)
+
+          await prisma.tabela.upsert({
+
+            where: {
+
+              campeonato_id_time_id: {
+
+                campeonato_id: idCampeonato,
+
+                time_id: time.time_id
+
+              }
+
+            },
+
+            update: {
+
+              nome: time.nome,
+
+              escudo: time.escudo,
+
+              posicao: time.posicao,
+
+              pontos: time.pontos,
+
+              jogos: time.jogos,
+
+              vitorias: time.vitorias,
+
+              empates: time.empates,
+
+              derrotas: time.derrotas,
+
+              gols_pro: time.gols_pro,
+
+              gols_contra: time.gols_contra,
+
+              saldo_gols: time.saldo_gols,
+
+              aproveitamento: time.aproveitamento,
+
+              grupo: grupo.grupo,
+
+              fase: "grupos"
+
+            },
+
+            create: {
+
+              campeonato_id: idCampeonato,
+
+              time_id: time.time_id,
+
+              nome: time.nome,
+
+              escudo: time.escudo,
+
+              posicao: time.posicao,
+
+              pontos: time.pontos,
+
+              jogos: time.jogos,
+
+              vitorias: time.vitorias,
+
+              empates: time.empates,
+
+              derrotas: time.derrotas,
+
+              gols_pro: time.gols_pro,
+
+              gols_contra: time.gols_contra,
+
+              saldo_gols: time.saldo_gols,
+
+              aproveitamento: time.aproveitamento,
+
+              grupo: grupo.grupo,
+
+              fase: "grupos"
+
+            }
+
+          })
+
+        }
+
+      }
+
+      await prisma.tabela.deleteMany({
+
+        where: {
+
+          campeonato_id: idCampeonato,
+
+          time_id: {
+
+            notIn: ids
+
+          }
+
+        }
+
+      })
+
+    }
+
+    console.log(`✅ Tabela ${idCampeonato} atualizada`)
+
+  } catch (erro) {
+
+    console.error(
+
+      `❌ Erro ao atualizar tabela ${idCampeonato}:`,
+
+      erro.message
+
+    )
+
   }
 
-  setCache(
-    chaveCache,
-    resposta,
-    CACHE_TTL.TABELA
-  )
-
-  return resposta
 }
 
 
@@ -169,12 +592,3 @@ export function buscarTabelaCopaBrasil() {
   )
 }
 
-export function atualizarTabelaCampeonato(idCampeonato) {
-
-  const chaveCache = `tabela:${idCampeonato}`
-
-  getCache(chaveCache) &&
-    setCache(chaveCache, null, 0)
-
-  return buscarTabelaCampeonato(idCampeonato)
-}

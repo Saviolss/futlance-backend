@@ -69,3 +69,193 @@ model Partida {
 
   @@unique([partidaId, timeId])
 }
+
+model Agenda {
+  id               Int      @id @default(autoincrement())
+
+  partida_id       Int      @unique
+
+  campeonato_id    Int
+  campeonato       String
+
+  mandante_nome    String
+  mandante_escudo  String?
+
+  visitante_nome   String
+  visitante_escudo String?
+
+  data             String
+  hora             String
+  status           String
+
+  data_iso         DateTime
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([campeonato_id])
+  @@index([data_iso])
+}
+
+model PartidaAoVivo {
+  id                Int      @id @default(autoincrement())
+
+  partida_id        Int      @unique
+
+  campeonato_id     Int?
+  campeonato_nome   String?
+
+  status            String
+  tempo             Int?
+
+  placar_mandante   Int?
+  placar_visitante  Int?
+
+  penalti_mandante  Int?
+  penalti_visitante Int?
+  penalti_cobrancas Json?
+
+  mandante_nome     String?
+  mandante_escudo   String?
+
+  visitante_nome    String?
+  visitante_escudo  String?
+
+  estadio_nome      String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([campeonato_id])
+  @@index([status])
+}
+
+model Artilheiro {
+
+  id               Int      @id @default(autoincrement())
+
+  jogador_id       Int      
+
+  campeonato_id    Int
+
+  nome             String
+
+  clube_nome       String
+
+  clube_escudo     String?
+
+  gols             Int      @default(0)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([campeonato_id])
+  @@unique([campeonato_id, jogador_id])
+  @@index([gols])
+
+}
+
+model Tabela {
+
+  id              Int      @id @default(autoincrement())
+
+  campeonato_id   Int
+
+  time_id         Int
+
+  nome            String
+
+  escudo          String?
+
+  posicao         Int
+
+  pontos          Int
+
+  jogos           Int
+
+  vitorias        Int
+
+  empates         Int
+
+  derrotas        Int
+
+  gols_pro        Int
+
+  gols_contra     Int
+
+  saldo_gols      Int
+
+  aproveitamento  Float?
+
+  grupo           String?
+
+  fase            String?
+
+  createdAt       DateTime @default(now())
+
+  updatedAt       DateTime @updatedAt
+
+  @@unique([campeonato_id, time_id])
+
+  @@index([campeonato_id])
+
+  @@index([grupo])
+
+  @@index([fase])
+
+}
+
+model PartidaFinalizada {
+  id                 Int      @id @default(autoincrement())
+
+  partida_id         Int      @unique
+
+  campeonato_id      Int
+  campeonato_nome    String
+
+  status             String
+
+  mandante_nome      String
+  mandante_escudo    String?
+
+  visitante_nome     String
+  visitante_escudo   String?
+
+  placar_mandante    Int?
+  placar_visitante   Int?
+
+  data               String?
+  hora               String?
+
+  data_iso           DateTime?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([campeonato_id])
+  @@index([data_iso])
+}
+
+model Noticia {
+  id         Int      @id @default(autoincrement())
+
+  titulo     String
+  descricao  String?
+
+  imagem     String?
+
+  fonte      String
+
+  url         String   @unique
+
+  data        DateTime?
+
+  categoria   String[]
+
+  autor       String[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([data])
+}

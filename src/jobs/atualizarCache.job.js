@@ -1,9 +1,12 @@
 import cron from "node-cron"
 
 import {
-  buscarTabelaBrasileirao,
-  buscarTabelaCopaMundo
+  atualizarTabelaCampeonato
 } from "../servicos/tabela.servico.js"
+
+import {
+  CAMPEONATOS 
+} from "../constantes/campeonatos.js"
 
 import {
   buscarAgendaBrasileirao,
@@ -14,7 +17,8 @@ import {
 import {
   buscarArtilheirosBrasileirao,
   buscarArtilheirosCopaMundo,
-  buscarArtilheirosCopaBrasil
+  buscarArtilheirosCopaBrasil,
+  atualizarArtilhariaCampeonato
 } from "../servicos/artilheiro.servico.js"
 
 export function iniciarJobs() {
@@ -22,16 +26,34 @@ export function iniciarJobs() {
   // TABELAS – a cada 45 min
   // ======================
   cron.schedule("*/45 * * * *", async () => {
+
     try {
-      console.log("🔄 Atualizando cache das tabelas...")
+
+      console.log("🔄 Atualizando tabelas...")
+
       await Promise.all([
-        buscarTabelaBrasileirao(),
+
+        atualizarTabelaCampeonato(
+          CAMPEONATOS.BRASILEIRAO
+        ),
+
+        atualizarTabelaCampeonato(
+          CAMPEONATOS.COPAMUNDO
+        )
+
       ])
 
       console.log("✅ Tabelas atualizadas")
+
     } catch (erro) {
-      console.error("❌ Erro ao atualizar tabelas", erro.message)
+
+      console.error(
+        "❌ Erro ao atualizar tabelas",
+        erro.message
+      )
+
     }
+
   })
 
   // ======================
@@ -61,9 +83,9 @@ export function iniciarJobs() {
       console.log("🔄 Atualizando cache dos artilheiros...");
 
       await Promise.all([
-        buscarArtilheirosBrasileirao(),
-        buscarArtilheirosCopaMundo(),
-        buscarArtilheirosCopaBrasil(),
+        atualizarArtilhariaCampeonato(CAMPEONATOS.BRASILEIRAO),
+        atualizarArtilhariaCampeonato(CAMPEONATOS.COPAMUNDO),
+        atualizarArtilhariaCampeonato(CAMPEONATOS.COPABRASIL),
       ]);
 
       console.log("✅ Artilheiros atualizados");
