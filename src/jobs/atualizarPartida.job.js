@@ -11,7 +11,6 @@ import {
 import {
   verificarPartidasAoVivo
 } from "./partidasAoVivo.job.js"
-
 /* ======================================================
    CACHE LOCAL
 ====================================================== */
@@ -42,6 +41,9 @@ function gerarHash(partidas = []) {
 
       status:
         p.status,
+
+      tempo:
+        p.tempo,
 
       penalti_mandante:
         p.penalti?.mandante || 0,
@@ -78,9 +80,8 @@ function temJogoEmPenaltis(partidas = []) {
 
 export function iniciarJobPartidas() {
 
-  console.log(
-    "⚙️ Job de partidas inicializado"
-  )
+  console.log("⚙️ Job de partidas inicializado");
+
 
   async function atualizar() {
 
@@ -89,25 +90,28 @@ export function iniciarJobPartidas() {
     try {
 
       /* ============================
+         🔄 ATUALIZA API
+      ============================ */
+
+      await verificarPartidasAoVivo()
+
+      /* ============================
          🔴 AO VIVO
       ============================ */
 
       aoVivo =
         await buscarTodasAoVivo()
 
-      if (aoVivo.length > 0) {
-        await verificarPartidasAoVivo()
-      }
-
       const novoHashAoVivo =
         gerarHash(aoVivo)
-
+      console.log("Hash antigo:", ultimoHashAoVivo);
+      console.log("Hash novo :", novoHashAoVivo);
       // 🔥 envia websocket apenas se mudou
       if (
         novoHashAoVivo !==
         ultimoHashAoVivo
       ) {
-
+        console.log("📡 Enviando websocket");
         ultimoHashAoVivo =
           novoHashAoVivo
 
@@ -185,19 +189,15 @@ export function iniciarJobPartidas() {
       temJogoEmPenaltis(aoVivo)
 
     const proximoTempo =
-
-      // 😴 sem jogos
       aoVivo.length === 0
 
         ? 45 * 60 * 1000
 
-        // ⚡ pênaltis
         : penaltis
 
-          ? 1 * 60 * 1000
+          ? 60 * 1000
 
-          // 🔴 jogos normais
-          : 2 * 60 * 1000
+          : 90 * 1000
 
     /* ============================
        LOG
@@ -212,14 +212,15 @@ export function iniciarJobPartidas() {
     } else if (penaltis) {
 
       console.log(
-        "⚡ Jogos em pênaltis — atualização 1 min"
+        "⚡ Jogos em disputa de pênaltis — atualização 1 min"
       )
 
     } else {
 
       console.log(
-        "🔴 Jogos ao vivo — atualização 2 min"
+        "🔴 Jogos ao vivo — atualização 90 s"
       )
+
     }
 
     /* ============================

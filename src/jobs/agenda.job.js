@@ -1,31 +1,54 @@
 import cron from "node-cron"
-import { buscarAgendaGeral } from "../servicos/agenda.servico.js"
-import { getCache, setCache } from "../cache/cacheMemoria.js"
-import { CACHE_TTL } from "../constantes/cacheTTL.js"
+
+import { CAMPEONATOS } from "../constantes/campeonatos.js"
+
+import {
+  atualizarAgendaCampeonato
+} from "../servicos/agenda.servico.js"
 
 export function iniciarJobAgenda() {
-  cron.schedule("0 */6 * * *", executarJobAgenda) // 6 horas
+
+  // Executa ao iniciar o servidor
+  executarJobAgenda()
+
+  // Executa a cada 6 horas
+  cron.schedule("0 */6 * * *", executarJobAgenda)
 }
 
 async function executarJobAgenda() {
-  const chave = "agenda:atualizada"
-
-  if (getCache(chave)) {
-    console.log("📅 Agenda já atualizada (cache)")
-    return
-  }
 
   try {
+
     console.log("📅 Atualizando agenda...")
 
-    const agenda = await buscarAgendaGeral()
+    await Promise.all([
 
-    console.log("📦 Agenda carregada:", agenda.length)
+      atualizarAgendaCampeonato(
+        CAMPEONATOS.BRASILEIRAO,
+        "Brasileirão"
+      ),
 
-    setCache(chave, true, CACHE_TTL.AGENDA)
+      atualizarAgendaCampeonato(
+        CAMPEONATOS.COPABRASIL,
+        "Copa do Brasil"
+      ),
 
-    console.log("✅ Agenda processada")
+      atualizarAgendaCampeonato(
+        CAMPEONATOS.COPAMUNDO,
+        "Copa do Mundo"
+      )
+
+    ])
+
+    console.log("✅ Agenda atualizada com sucesso.")
+
   } catch (erro) {
-    console.error("❌ ERRO CRÍTICO AGENDA:", erro)
+
+    console.error(
+      "❌ Erro ao atualizar agenda:",
+      erro
+    )
+
   }
+
 }

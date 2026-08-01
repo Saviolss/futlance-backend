@@ -1,3 +1,8 @@
+function statusEhFinalizado(status) {
+  const valor = String(status || "").trim().toLowerCase()
+  return ["finalizado", "encerrado", "concluido", "finished", "complete"].includes(valor)
+}
+
 export function detectarEventosPartida(atualApi, anterior) {
   const atual = normalizar(atualApi)
 
@@ -20,8 +25,8 @@ export function detectarEventosPartida(atualApi, anterior) {
   const gol = golMandante || golVisitante
 
   const fimDeJogo =
-    anterior.status === "andamento" &&
-    atual.status !== "andamento"
+    (anterior.status === "andamento" || anterior.status === "intervalo") &&
+    statusEhFinalizado(atual.status)
 
   return {
     gol,

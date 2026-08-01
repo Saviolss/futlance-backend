@@ -1,6 +1,4 @@
-import {
-  atualizarNoticias
-} from "./noticia.servico.js"
+import { atualizarNoticias } from "./noticia.servico.js"
 
 /* ======================================================
    JOB NOTÍCIAS
@@ -16,19 +14,19 @@ export function iniciarJobNoticias() {
 
     try {
 
-      const noticias =
-        await atualizarNoticias()
+      await atualizarNoticias()
 
       console.log(
-        `📰 Notícias atualizadas: ${noticias.length}`
+        "📰 Notícias atualizadas"
       )
 
-    } catch (e) {
+    } catch (erro) {
 
       console.error(
         "❌ Erro job notícias:",
-        e.message
+        erro.message
       )
+
     }
 
     /* ==========================================
@@ -36,10 +34,15 @@ export function iniciarJobNoticias() {
     ========================================== */
 
     setTimeout(
+
       atualizar,
-      30 * 60 * 1000 // 30 min
+
+      30 * 60 * 1000
+
     )
+
   }
 
   atualizar()
+
 }

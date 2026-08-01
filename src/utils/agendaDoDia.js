@@ -1,29 +1,20 @@
-import { CAMPEONATOS } from "../constantes/campeonatos.js"
-import { obterAgendaCache } from "./cacheAgenda.js"
+import { PrismaClient } from "@prisma/client";
 
-// Retorna todas as partidas do dia atual (horário BR)
-export function obterPartidasDoDia() {
-  const hoje = hojeBR()
-  const partidasHoje = []
+const prisma = new PrismaClient();
 
-  for (const campeonatoId of Object.values(CAMPEONATOS)) {
-    const agenda = obterAgendaCache(campeonatoId)
+export async function obterPartidasDoDia() {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
 
-    // agenda agora JÁ É um array
-    if (!Array.isArray(agenda)) continue
+  const amanha = new Date(hoje);
+  amanha.setDate(amanha.getDate() + 1);
 
-    agenda.forEach(partida => {
-      if (partida.data === hoje) {
-        partidasHoje.push(partida)
+  return prisma.agenda.findMany({
+    where: {
+      data_iso: {
+        gte: hoje,
+        lt: amanha
       }
-    })
-  }
-
-  return partidasHoje
-}
-
-function hojeBR() {
-  const agora = new Date()
-  agora.setHours(agora.getHours() - 3)
-  return agora.toISOString().slice(0, 10)
+    }
+  });
 }

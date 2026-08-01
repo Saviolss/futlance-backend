@@ -1,23 +1,26 @@
-import { iniciarJobPartidasAoVivo } from "./partidasAoVivo.job.js"
-import { obterPartidasDoDia } from "../utils/agendaDoDia.js"
+import { iniciarJobPartidasAoVivo } from "./partidasAoVivo.job.js";
+import { atualizarPartidasAoVivo } from "../servicos/partidaLive.servico.js";
+import { obterPartidasDoDia } from "../utils/agendaDoDia.js";
 
-let jobAtivo = false
+let jobAtivo = false;
 
 export async function gerenciarAoVivo() {
   try {
-    const partidasHoje = await obterPartidasDoDia()
+    const partidasHoje = await obterPartidasDoDia();
 
-    if (partidasHoje.length > 0 && !jobAtivo) {
-      iniciarJobPartidasAoVivo()
-      jobAtivo = true
-      console.log("🔥 Job de partidas ao vivo ATIVADO")
-    }
+    if (partidasHoje.length > 0) {
+      await atualizarPartidasAoVivo();
 
-    if (partidasHoje.length === 0 && jobAtivo) {
-      jobAtivo = false
-      console.log("🛑 Nenhuma partida hoje, job ao vivo DESATIVADO")
+      if (!jobAtivo) {
+        await iniciarJobPartidasAoVivo();
+        jobAtivo = true;
+        console.log("🔥 Job de partidas ao vivo ATIVADO");
+      }
+    } else if (jobAtivo) {
+      jobAtivo = false;
+      console.log("🛑 Nenhuma partida hoje. Job ao vivo desativado.");
     }
   } catch (erro) {
-    console.error("❌ Erro no gerenciador ao vivo:", erro.message)
+    console.error("❌ Erro no gerenciador ao vivo:", erro.message);
   }
 }

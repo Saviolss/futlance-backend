@@ -1,7 +1,8 @@
 import { buscarAgendaApi } from "./apiFutebol.servico.js"
-import { getCache, setCache } from "../cache/cacheMemoria.js"
-import { CACHE_TTL } from "../constantes/cacheTTL.js"
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 /* =========================================================
    🔹 NORMALIZA PARTIDA
@@ -11,7 +12,8 @@ function normalizarPartida(partida, campeonato) {
 
   if (
     !partida?.time_mandante ||
-    !partida?.time_visitante
+    !partida?.time_visitante || 
+    !partida?.data_realizacao 
   ) {
     return null
   }
@@ -195,95 +197,192 @@ function processarAgenda(
 ) {
 
   if (!agenda?.partidas) {
-
     return []
   }
 
   const todas = extrairTodasPartidas(
     agenda.partidas
   )
-
-    .map(p =>
+    .map(partida =>
       normalizarPartida(
-        p,
+        partida,
         campeonato
       )
     )
-
     .filter(Boolean)
 
-  const semDuplicados =
-    removerDuplicados(todas)
-
-  return selecionarPartidasDoDiaOuProxima(
-    semDuplicados
-  )
+  return removerDuplicados(todas)
 }
 
-/* =========================================================
-   🔹 FUNÇÃO BASE COM CACHE
-========================================================= */
-
-async function buscarAgendaCampeonato(
+export async function atualizarAgendaCampeonato(
   idCampeonato,
   nomeCampeonato
 ) {
-
-  const chaveCache =
-    `agenda:${idCampeonato}`
-
-  const cache =
-    getCache(chaveCache)
-
-  if (cache) {
-
-    return cache
-  }
-
   try {
 
-    const agenda =
-      await buscarAgendaApi(
-        idCampeonato
-      )
+    const agenda = await buscarAgendaApi(idCampeonato)
 
-    const processada =
-      processarAgenda(
-        agenda,
-        nomeCampeonato
-      )
-
-    setCache(
-      chaveCache,
-      processada,
-      CACHE_TTL.AGENDA
+    const partidas = processarAgenda(
+      agenda,
+      nomeCampeonato
     )
 
-    return processada
+    await prisma.$transaction(async (tx) => {
+
+      for (const partida of partidas) {
+
+        await tx.agenda.upsert({
+
+          where: {
+            partida_id: partida.partida_id
+          },
+
+          update: {
+
+            campeonato_id: idCampeonato,
+            campeonato: partida.campeonato,
+
+            mandante_nome: partida.mandante.nome,
+            mandante_escudo: partida.mandante.escudo,
+
+            visitante_nome: partida.visitante.nome,
+            visitante_escudo: partida.visitante.escudo,
+
+            data: partida.data,
+            hora: partida.hora,
+            status: partida.status,
+
+            data_iso: new Date(partida.data_iso)
+
+          },
+
+          create: {
+
+            partida_id: partida.partida_id,
+
+            campeonato_id: idCampeonato,
+            campeonato: partida.campeonato,
+
+            mandante_nome: partida.mandante.nome,
+            mandante_escudo: partida.mandante.escudo,
+
+            visitante_nome: partida.visitante.nome,
+            visitante_escudo: partida.visitante.escudo,
+
+            data: partida.data,
+            hora: partida.hora,
+            status: partida.status,
+
+            data_iso: new Date(partida.data_iso)
+
+          }
+
+        })
+
+      }
+
+      // Remove partidas que não fazem mais parte da agenda
+      const partidasIds = partidas.map(
+        partida => partida.partida_id
+      )
+
+      await tx.agenda.deleteMany({
+
+        where: {
+
+          campeonato_id: idCampeonato,
+
+          partida_id: {
+            notIn: partidasIds
+          }
+
+        }
+
+      })
+
+    })
+
+    console.log(`✅ Agenda ${nomeCampeonato} atualizada.`)
 
   } catch (erro) {
 
     console.error(
-      `❌ Erro ao buscar agenda do campeonato ${idCampeonato}:`,
+      `❌ Erro ao atualizar agenda ${nomeCampeonato}:`,
+      erro.message
+    )
+
+  }
+}
+
+/* =========================================================
+    🔹 BUSCA AGENDA banco
+  ========================================================= */
+async function buscarAgendaBanco(idCampeonato) {
+
+  try {
+
+    const partidas = await prisma.agenda.findMany({
+
+      where: {
+        campeonato_id: idCampeonato
+      },
+
+      orderBy: [
+        {
+          data_iso: "asc"
+        }
+      ]
+
+    })
+
+    return partidas.map(partida => ({
+
+      partida_id: partida.partida_id,
+
+      campeonato: partida.campeonato,
+
+      mandante: {
+        nome: partida.mandante_nome,
+        escudo: partida.mandante_escudo
+      },
+
+      visitante: {
+        nome: partida.visitante_nome,
+        escudo: partida.visitante_escudo
+      },
+
+      data: partida.data,
+
+      hora: partida.hora,
+
+      status: partida.status,
+
+      data_iso: partida.data_iso
+
+    }))
+
+  } catch (erro) {
+
+    console.error(
+      "❌ Erro ao buscar agenda:",
       erro.message
     )
 
     return []
-  }
-}
 
+  }
+
+}
 /* =========================================================
    🔹 BRASILEIRÃO
 ========================================================= */
 
 export function buscarAgendaBrasileirao() {
 
-  return buscarAgendaCampeonato(
-
-    CAMPEONATOS.BRASILEIRAO,
-
-    "Brasileirão"
+  return buscarAgendaBanco(
+    CAMPEONATOS.BRASILEIRAO
   )
+
 }
 
 /* =========================================================
@@ -292,12 +391,10 @@ export function buscarAgendaBrasileirao() {
 
 export function buscarAgendaCopaMundo() {
 
-  return buscarAgendaCampeonato(
-
-    CAMPEONATOS.COPAMUNDO,
-
-    "Copa do Mundo"
+  return buscarAgendaBanco(
+    CAMPEONATOS.COPAMUNDO
   )
+
 }
 
 /* =========================================================
@@ -306,12 +403,10 @@ export function buscarAgendaCopaMundo() {
 
 export function buscarAgendaCopaBrasil() {
 
-  return buscarAgendaCampeonato(
-
-    CAMPEONATOS.COPABRASIL,
-
-    "Copa do Brasil"
+  return buscarAgendaBanco(
+    CAMPEONATOS.COPABRASIL
   )
+  
 }
 
 /* =========================================================
