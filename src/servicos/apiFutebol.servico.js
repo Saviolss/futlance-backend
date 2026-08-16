@@ -44,6 +44,7 @@ export function buscarAgendaApi(idCampeonato) {
   )
 }
 
+
 export function buscarRodadasApi(idCampeonato) {
   return requestApiFutebol(
     `/campeonatos/${idCampeonato}/partidas`,

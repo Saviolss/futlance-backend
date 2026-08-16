@@ -259,3 +259,22 @@ model Noticia {
 
   @@index([data])
 }
+
+model Usuario {
+  id                Int      @id @default(autoincrement())
+
+  googleId          String   @unique
+  nome              String
+  email             String   @unique
+
+  idioma            String   @default("pt")
+
+  aceitouPolitica   Boolean  @default(false)
+  aceitouPoliticaEm DateTime?
+
+  ativo             Boolean  @default(true)
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+}
