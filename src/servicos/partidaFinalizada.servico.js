@@ -303,6 +303,114 @@ function normalizarPartidaFinalizada(p) {
   }
 }
 
+export async function salvarPartidaFinalizada(partidaApi) {
+
+  if (!partidaApi) {
+
+    return null
+
+  }
+
+  try {
+
+    const partida = normalizarPartidaFinalizada(partidaApi)
+
+    if (!partida || !partida.partida_id) {
+
+      return null
+
+    }
+
+    const partidaSalva = await prisma.partidaFinalizada.upsert({
+
+      where: {
+
+        partida_id: partida.partida_id
+
+      },
+
+      update: {
+
+        campeonato_id: partidaApi.campeonato?.campeonato_id ?? null,
+
+        campeonato_nome: partida.campeonato.nome,
+
+        status: partida.status,
+
+        mandante_nome: partida.mandante.nome,
+
+        mandante_escudo: partida.mandante.escudo,
+
+        visitante_nome: partida.visitante.nome,
+
+        visitante_escudo: partida.visitante.escudo,
+
+        placar_mandante: partida.placar_mandante,
+
+        placar_visitante: partida.placar_visitante,
+
+        data: partida.data,
+
+        hora: partida.hora,
+
+        data_iso: partida.data_iso
+          ? new Date(partida.data_iso)
+          : null
+
+      },
+
+      create: {
+
+        partida_id: partida.partida_id,
+
+        campeonato_id: partidaApi.campeonato?.campeonato_id ?? null,
+
+        campeonato_nome: partida.campeonato.nome,
+
+        status: partida.status,
+
+        mandante_nome: partida.mandante.nome,
+
+        mandante_escudo: partida.mandante.escudo,
+
+        visitante_nome: partida.visitante.nome,
+
+        visitante_escudo: partida.visitante.escudo,
+
+        placar_mandante: partida.placar_mandante,
+
+        placar_visitante: partida.placar_visitante,
+
+        data: partida.data,
+
+        hora: partida.hora,
+
+        data_iso: partida.data_iso
+          ? new Date(partida.data_iso)
+          : null
+
+      }
+
+    })
+
+    return partidaSalva
+
+  } catch (erro) {
+
+    console.error(
+
+      `❌ Erro ao salvar partida finalizada ${partidaApi?.partida_id}:`,
+
+      erro.message
+
+    )
+
+    return null
+
+  }
+
+}
+
 /* =========================================================
    🔹 TODAS FINALIZADAS (CORRIGIDO)
 ========================================================= */
