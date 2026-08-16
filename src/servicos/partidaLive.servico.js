@@ -1,12 +1,37 @@
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
-import { buscarAoVivoApi } from "./apiFutebol.servico.js" 
+import { buscarAoVivoApi } from "./apiFutebol.servico.js"
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-/* 🔹 função base */
-export async function buscarPartidasAoVivoCampeonato(idCampeonato = null) {
-  console.log("⚽ Atualizando partidas ao vivo...");
+/* =========================================================
+   STATUS FINALIZADOS
+========================================================= */
+
+function statusEhFinalizado(status) {
+
+  const valor =
+    String(status || "")
+      .trim()
+      .toLowerCase()
+
+  return [
+    "finalizado",
+    "encerrado",
+    "concluido",
+    "finished",
+    "complete"
+  ].includes(valor)
+
+}
+
+/* =========================================================
+   BUSCAR PARTIDAS AO VIVO
+========================================================= */
+
+export async function buscarPartidasAoVivoCampeonato(
+  idCampeonato = null
+) {
 
   try {
 
@@ -18,32 +43,43 @@ export async function buscarPartidasAoVivoCampeonato(idCampeonato = null) {
 
     }
 
-    const partidas = await prisma.partidaAoVivo.findMany({
+    const partidas =
+      await prisma.partidaAoVivo.findMany({
 
-      where,
+        where,
 
-      orderBy: {
-        partida_id: "asc"
-      }
+        orderBy: {
+          partida_id: "asc"
+        }
 
-    })
+      })
 
     return partidas.map(partida => ({
 
-      partida_id: partida.partida_id,
+      partida_id:
+        partida.partida_id,
 
-      status: partida.status,
+      status:
+        partida.status,
 
-      tempo: partida.tempo,
+      tempo:
+        partida.tempo,
 
       campeonato: {
-        campeonato_id: partida.campeonato_id,
-        nome: partida.campeonato_nome
+
+        campeonato_id:
+          partida.campeonato_id,
+
+        nome:
+          partida.campeonato_nome
+
       },
 
-      placar_mandante: partida.placar_mandante,
+      placar_mandante:
+        partida.placar_mandante,
 
-      placar_visitante: partida.placar_visitante,
+      placar_visitante:
+        partida.placar_visitante,
 
       penalti:
 
@@ -52,11 +88,14 @@ export async function buscarPartidasAoVivoCampeonato(idCampeonato = null) {
 
           ? {
 
-            mandante: partida.penalti_mandante,
+            mandante:
+              partida.penalti_mandante,
 
-            visitante: partida.penalti_visitante,
+            visitante:
+              partida.penalti_visitante,
 
-            cobrancas: partida.penalti_cobrancas || []
+            cobrancas:
+              partida.penalti_cobrancas || []
 
           }
 
@@ -64,23 +103,28 @@ export async function buscarPartidasAoVivoCampeonato(idCampeonato = null) {
 
       mandante: {
 
-        nome: partida.mandante_nome,
+        nome:
+          partida.mandante_nome,
 
-        escudo: partida.mandante_escudo
+        escudo:
+          partida.mandante_escudo
 
       },
 
       visitante: {
 
-        nome: partida.visitante_nome,
+        nome:
+          partida.visitante_nome,
 
-        escudo: partida.visitante_escudo
+        escudo:
+          partida.visitante_escudo
 
       },
 
       estadio: {
 
-        nome_popular: partida.estadio_nome
+        nome_popular:
+          partida.estadio_nome
 
       }
 
@@ -99,125 +143,199 @@ export async function buscarPartidasAoVivoCampeonato(idCampeonato = null) {
 
 }
 
+/* =========================================================
+   ATUALIZAR PARTIDAS AO VIVO
+========================================================= */
+
 export async function atualizarPartidasAoVivo() {
+
   try {
 
-    const partidas = await buscarAoVivoApi()
+    const partidas =
+      await buscarAoVivoApi()
 
     if (!Array.isArray(partidas)) {
+
       return
+
     }
 
-    const partidasNormalizadas = partidas
-      .filter(p =>
-        p.status === "andamento" ||
-        p.status === "intervalo"
-      )
-      .map(normalizarPartida)
-      .filter(Boolean)
+    /*
+     * IMPORTANTE:
+     *
+     * Aqui NÃO tratamos finalização.
+     *
+     * O job partidasAoVivo faz isso através de
+     * buscarPartidaApi(partida_id).
+     *
+     * Portanto aqui só atualizamos partidas que
+     * a API considera ao vivo.
+     */
 
+    const partidasNormalizadas =
+      partidas
 
-    await prisma.$transaction(async (tx) => {
+        .filter(p => {
 
-      for (const partida of partidasNormalizadas) {
+          const status =
+            String(p?.status || "")
+              .trim()
+              .toLowerCase()
 
-
-        await tx.partidaAoVivo.upsert({
-
-          where: {
-            partida_id: partida.partida_id
-            
-          },
-
-          update: {
-
-            campeonato_id: partida.campeonato.campeonato_id,
-
-            campeonato_nome: partida.campeonato.nome,
-
-            status: partida.status,
-
-            tempo: partida.tempo,
-
-            placar_mandante: partida.placar_mandante,
-
-            placar_visitante: partida.placar_visitante,
-
-            penalti_mandante: partida.penalti?.mandante,
-
-            penalti_visitante: partida.penalti?.visitante,
-
-            penalti_cobrancas: partida.penalti?.cobrancas ?? [],
-
-            mandante_nome: partida.mandante.nome,
-
-            mandante_escudo: partida.mandante.escudo,
-
-            visitante_nome: partida.visitante.nome,
-
-            visitante_escudo: partida.visitante.escudo,
-
-            estadio_nome: partida.estadio.nome_popular
-
-          },
-
-          create: {
-
-            partida_id: partida.partida_id,
-
-            campeonato_id: partida.campeonato.campeonato_id,
-
-            campeonato_nome: partida.campeonato.nome,
-
-            status: partida.status,
-
-            tempo: partida.tempo,
-
-            placar_mandante: partida.placar_mandante,
-
-            placar_visitante: partida.placar_visitante,
-
-            penalti_mandante: partida.penalti?.mandante,
-
-            penalti_visitante: partida.penalti?.visitante,
-
-            penalti_cobrancas: partida.penalti?.cobrancas ?? [],
-
-            mandante_nome: partida.mandante.nome,
-
-            mandante_escudo: partida.mandante.escudo,
-
-            visitante_nome: partida.visitante.nome,
-
-            visitante_escudo: partida.visitante.escudo,
-
-            estadio_nome: partida.estadio.nome_popular
-
-          }
+          return (
+            status === "andamento" ||
+            status === "intervalo" ||
+            status === "disputa_penalti"
+          )
 
         })
 
-      }
+        .map(normalizarPartida)
 
-      const ids = partidasNormalizadas.map(
-        partida => partida.partida_id
+        .filter(Boolean)
+
+    /*
+     * Se a API não retornou nenhuma partida ao vivo,
+     * NÃO vamos apagar tudo.
+     *
+     * Isso é importante porque o job individual ainda
+     * precisa consultar as partidas que estão no banco.
+     */
+
+    if (
+      partidasNormalizadas.length === 0
+    ) {
+
+      console.log(
+        "⚠️ API não retornou partidas ao vivo. Banco não será limpo."
       )
 
-      await tx.partidaAoVivo.deleteMany({
+      return
 
-        where: {
+    }
 
-          partida_id: {
-            notIn: ids
-          }
+    await prisma.$transaction(
+      async tx => {
+
+        for (
+          const partida
+          of partidasNormalizadas
+        ) {
+
+          await tx.partidaAoVivo.upsert({
+
+            where: {
+
+              partida_id:
+                partida.partida_id
+
+            },
+
+            update: {
+
+              campeonato_id:
+                partida.campeonato.campeonato_id,
+
+              campeonato_nome:
+                partida.campeonato.nome,
+
+              status:
+                partida.status,
+
+              tempo:
+                partida.tempo,
+
+              placar_mandante:
+                partida.placar_mandante,
+
+              placar_visitante:
+                partida.placar_visitante,
+
+              penalti_mandante:
+                partida.penalti?.mandante ?? null,
+
+              penalti_visitante:
+                partida.penalti?.visitante ?? null,
+
+              penalti_cobrancas:
+                partida.penalti?.cobrancas ?? [],
+
+              mandante_nome:
+                partida.mandante.nome,
+
+              mandante_escudo:
+                partida.mandante.escudo,
+
+              visitante_nome:
+                partida.visitante.nome,
+
+              visitante_escudo:
+                partida.visitante.escudo,
+
+              estadio_nome:
+                partida.estadio.nome_popular
+
+            },
+
+            create: {
+
+              partida_id:
+                partida.partida_id,
+
+              campeonato_id:
+                partida.campeonato.campeonato_id,
+
+              campeonato_nome:
+                partida.campeonato.nome,
+
+              status:
+                partida.status,
+
+              tempo:
+                partida.tempo,
+
+              placar_mandante:
+                partida.placar_mandante,
+
+              placar_visitante:
+                partida.placar_visitante,
+
+              penalti_mandante:
+                partida.penalti?.mandante ?? null,
+
+              penalti_visitante:
+                partida.penalti?.visitante ?? null,
+
+              penalti_cobrancas:
+                partida.penalti?.cobrancas ?? [],
+
+              mandante_nome:
+                partida.mandante.nome,
+
+              mandante_escudo:
+                partida.mandante.escudo,
+
+              visitante_nome:
+                partida.visitante.nome,
+
+              visitante_escudo:
+                partida.visitante.escudo,
+
+              estadio_nome:
+                partida.estadio.nome_popular
+
+            }
+
+          })
 
         }
 
-      })
+      }
+    )
 
-    })
-
-    console.log("✅ Partidas ao vivo atualizadas.")
+    console.log(
+      `✅ ${partidasNormalizadas.length} partidas ao vivo atualizadas.`
+    )
 
   } catch (erro) {
 
@@ -230,96 +348,198 @@ export async function atualizarPartidasAoVivo() {
 
 }
 
-export async function atualizarPartidaAoVivo(partidaApi) {
- 
+/* =========================================================
+   ATUALIZAR UMA PARTIDA ESPECÍFICA
+========================================================= */
+
+export async function atualizarPartidaAoVivo(
+  partidaApi
+) {
+
   try {
 
-    const partida = normalizarPartida(partidaApi)
-    
+    const partida =
+      normalizarPartida(partidaApi)
+
     if (!partida) {
-      return
+
+      console.error(
+        "❌ Não foi possível normalizar partida"
+      )
+
+      return null
+
     }
-    
-    await prisma.partidaAoVivo.upsert({
-      
-      where: {
-        partida_id: partida.partida_id
-      },
 
-      update: {
+    /*
+     * Se a API retornou finalizado, ainda permitimos
+     * atualizar o registro temporariamente.
+     *
+     * O partidasAoVivo.job imediatamente depois irá
+     * salvar em partidaFinalizada e remover daqui.
+     */
 
-        campeonato_id: partida.campeonato.campeonato_id,
+    const partidaSalva =
+      await prisma.partidaAoVivo.upsert({
 
-        campeonato_nome: partida.campeonato.nome,
+        where: {
 
-        status: partida.status,
+          partida_id:
+            partida.partida_id
 
-        tempo: partida.tempo,
+        },
 
-        placar_mandante: partida.placar_mandante,
+        update: {
 
-        placar_visitante: partida.placar_visitante,
+          campeonato_id:
+            partida.campeonato.campeonato_id,
 
-        penalti_mandante: partida.penalti?.mandante,
+          campeonato_nome:
+            partida.campeonato.nome,
 
-        penalti_visitante: partida.penalti?.visitante,
+          status:
+            partida.status,
 
-        penalti_cobrancas: partida.penalti?.cobrancas ?? [],
+          tempo:
+            partida.tempo,
 
-        mandante_nome: partida.mandante.nome,
+          placar_mandante:
+            partida.placar_mandante,
 
-        mandante_escudo: partida.mandante.escudo,
+          placar_visitante:
+            partida.placar_visitante,
 
-        visitante_nome: partida.visitante.nome,
+          penalti_mandante:
+            partida.penalti?.mandante ?? null,
 
-        visitante_escudo: partida.visitante.escudo,
+          penalti_visitante:
+            partida.penalti?.visitante ?? null,
 
-        estadio_nome: partida.estadio.nome_popular
+          penalti_cobrancas:
+            partida.penalti?.cobrancas ?? [],
 
-      },
+          mandante_nome:
+            partida.mandante.nome,
 
-      create: {
+          mandante_escudo:
+            partida.mandante.escudo,
 
-        partida_id: partida.partida_id,
+          visitante_nome:
+            partida.visitante.nome,
 
-        campeonato_id: partida.campeonato.campeonato_id,
+          visitante_escudo:
+            partida.visitante.escudo,
 
-        campeonato_nome: partida.campeonato.nome,
+          estadio_nome:
+            partida.estadio.nome_popular
 
-        status: partida.status,
+        },
 
-        tempo: partida.tempo,
+        create: {
 
-        placar_mandante: partida.placar_mandante,
+          partida_id:
+            partida.partida_id,
 
-        placar_visitante: partida.placar_visitante,
+          campeonato_id:
+            partida.campeonato.campeonato_id,
 
-        penalti_mandante: partida.penalti?.mandante,
+          campeonato_nome:
+            partida.campeonato.nome,
 
-        penalti_visitante: partida.penalti?.visitante,
+          status:
+            partida.status,
 
-        penalti_cobrancas: partida.penalti?.cobrancas ?? [],
+          tempo:
+            partida.tempo,
 
-        mandante_nome: partida.mandante.nome,
+          placar_mandante:
+            partida.placar_mandante,
 
-        mandante_escudo: partida.mandante.escudo,
+          placar_visitante:
+            partida.placar_visitante,
 
-        visitante_nome: partida.visitante.nome,
+          penalti_mandante:
+            partida.penalti?.mandante ?? null,
 
-        visitante_escudo: partida.visitante.escudo,
+          penalti_visitante:
+            partida.penalti?.visitante ?? null,
 
-        estadio_nome: partida.estadio.nome_popular
+          penalti_cobrancas:
+            partida.penalti?.cobrancas ?? [],
 
-      }
+          mandante_nome:
+            partida.mandante.nome,
 
-    })
-    console.log(partida);
+          mandante_escudo:
+            partida.mandante.escudo,
 
+          visitante_nome:
+            partida.visitante.nome,
+
+          visitante_escudo:
+            partida.visitante.escudo,
+
+          estadio_nome:
+            partida.estadio.nome_popular
+
+        }
+
+      })
+
+    console.log(
+      `⚽ Partida ${partida.partida_id} atualizada: ${partida.status}`
+    )
+
+    return partidaSalva
 
   } catch (erro) {
 
     console.error(
-      "❌ Erro ao atualizar partida ao vivo:",
+      `❌ Erro ao atualizar partida ${partidaApi?.partida_id}:`,
+      erro.message
+    )
+
+    return null
+
+  }
+
+}
+
+/* =========================================================
+   REMOVER PARTIDA DO AO VIVO
+========================================================= */
+
+export async function removerPartidaAoVivoBanco(
+  partidaId
+) {
+
+  if (!partidaId) {
+
+    return
+
+  }
+
+  try {
+
+    await prisma.partidaAoVivo.deleteMany({
+
+      where: {
+
+        partida_id:
+          partidaId
+
+      }
+
+    })
+
+    console.log(
+      `🗑️ Partida ${partidaId} removida do ao vivo`
+    )
+
+  } catch (erro) {
+
+    console.error(
+      `❌ Erro ao remover partida ${partidaId}:`,
       erro.message
     )
 
@@ -327,86 +547,130 @@ export async function atualizarPartidaAoVivo(partidaApi) {
 
 }
 
-/* 🔹 exports públicos */
+/* =========================================================
+   EXPORTS PÚBLICOS
+========================================================= */
+
 export function buscarTodasAoVivo() {
+
   return buscarPartidasAoVivoCampeonato()
+
 }
 
 export function buscarBrasileiraoAoVivo() {
+
   return buscarPartidasAoVivoCampeonato(
     CAMPEONATOS.BRASILEIRAO
   )
+
 }
 
 export function buscarCopaBrasilAoVivo() {
+
   return buscarPartidasAoVivoCampeonato(
     CAMPEONATOS.COPABRASIL
   )
+
 }
 
 export function buscarCopaMundoAoVivo() {
+
   return buscarPartidasAoVivoCampeonato(
     CAMPEONATOS.COPAMUNDO
   )
-}
-
-export async function removerPartidaAoVivoBanco(partidaId) {
-
-  await prisma.partidaAoVivo.deleteMany({
-    where: {
-      partida_id: partidaId
-    }
-  })
 
 }
+
+/* =========================================================
+   NORMALIZAR PARTIDA
+========================================================= */
 
 function normalizarPartida(p) {
+
   if (
     !p ||
     !p.time_mandante ||
     !p.time_visitante
   ) {
+
     return null
+
   }
-  
 
   return {
 
-    partida_id: p.partida_id,
+    partida_id:
+      p.partida_id,
 
-    status: p.status,
+    status:
+      String(p.status || "")
+        .trim()
+        .toLowerCase(),
 
-    tempo: p.cronometro ?? null,
+    tempo:
+      p.cronometro ?? null,
 
     campeonato: {
-      campeonato_id: p.campeonato?.campeonato_id,
-      nome: p.campeonato?.nome
+
+      campeonato_id:
+        p.campeonato?.campeonato_id,
+
+      nome:
+        p.campeonato?.nome
+
     },
 
-    placar_mandante: p.placar_mandante,
+    placar_mandante:
+      Number(p.placar_mandante ?? 0),
 
-    placar_visitante: p.placar_visitante,
+    placar_visitante:
+      Number(p.placar_visitante ?? 0),
 
-    penalti: p.disputa_penalti
-      ? {
-        mandante: p.disputa_penalti.placar_penalti_mandante,
-        visitante: p.disputa_penalti.placar_penalti_visitante,
-        cobrancas: p.disputa_penalti.cobrancas || []
-      }
-      : null,
+    penalti:
+      p.disputa_penalti
+
+        ? {
+
+          mandante:
+            p.disputa_penalti
+              .placar_penalti_mandante,
+
+          visitante:
+            p.disputa_penalti
+              .placar_penalti_visitante,
+
+          cobrancas:
+            p.disputa_penalti.cobrancas || []
+
+        }
+
+        : null,
 
     mandante: {
-      nome: p.time_mandante?.nome_popular,
-      escudo: p.time_mandante?.escudo
+
+      nome:
+        p.time_mandante?.nome_popular,
+
+      escudo:
+        p.time_mandante?.escudo
+
     },
 
     visitante: {
-      nome: p.time_visitante?.nome_popular,
-      escudo: p.time_visitante?.escudo
+
+      nome:
+        p.time_visitante?.nome_popular,
+
+      escudo:
+        p.time_visitante?.escudo
+
     },
 
     estadio: {
-      nome_popular: p.estadio?.nome_popular
+
+      nome_popular:
+        p.estadio?.nome_popular
+
     }
 
   }

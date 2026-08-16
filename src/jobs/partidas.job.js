@@ -7,7 +7,7 @@ export async function processarPartida(idPartida, idCampeonato) {
   // EVENTOS IMPORTANTES
   if (
     partida.status === "andamento" ||
-    partida.status === "finalizado"
+    partida.status === "finalizado"     
   ) {
     await atualizarTabelaCampeonato(idCampeonato)
   }

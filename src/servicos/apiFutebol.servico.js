@@ -67,55 +67,13 @@ export function buscarAoVivoApi() {
   )
 }
 
-export async function buscarPartidaApi(partidaId) {
-  try {
-    const response = await apiFutebol.get(
-      `/partidas/${partidaId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_FUTEBOL_KEY}`,
-        },
-      }
-    )
-
-    return response.data
-
-  } catch (erro) {
-
-    // ❌ API respondeu (404, 500 etc)
-    if (erro.response) {
-      console.error(
-        "API-Futebol erro:",
-        erro.response.status,
-        `/partidas/${partidaId}`,
-        erro.response.data
-      )
-
-      // 404 é normal (partida não existe mais)
-      if (erro.response.status === 404) {
-        return null
-      }
-    }
-
-    // 🌐 Erro de rede / timeout
-    if (erro.request) {
-      console.error(
-        "🌐 Erro de rede ao buscar partida:",
-        partidaId,
-        erro.message
-      )
-      return null
-    }
-
-    // 💥 Erro inesperado
-    console.error(
-      "💥 Erro inesperado ao buscar partida:",
-      erro.message
-    )
-
-    return null
-  }
+export function buscarPartidaApi(partidaId) {
+  return requestApiFutebol(
+    `/partidas/${partidaId}`,
+    "Erro ao buscar informações da partida"
+  )
 }
+
 
 /* =========================================================
    TIMES
