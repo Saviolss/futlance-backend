@@ -1,6 +1,6 @@
 import {
   buscarArtilheirosBrasileirao,
-  buscarArtilheirosCopaMundo,
+  buscarArtilheirosChampions,
   buscarArtilheirosCopaBrasil
 } from "../servicos/artilheiro.servico.js";
 
@@ -20,11 +20,11 @@ export async function getArtilheirosBrasileirao(req, res, next) {
 }
 
 /* =========================================================
-    COPA DO MUNDO
+    CHAMPIONS LEAGUE
 ========================================================= */
-export async function getArtilheirosCopaMundo(req, res, next) {
+export async function getArtilheirosChampions(req, res, next) {
   try {
-    const artilheiros = await buscarArtilheirosCopaMundo();
+    const artilheiros = await buscarArtilheirosChampions();
     res.json(artilheiros);
   } catch (erro) {
     next(erro);

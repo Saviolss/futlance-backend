@@ -1,7 +1,7 @@
 import {
   buscarTodasFinalizadas,
   buscarBrasileiraoFinalizadas,
-  buscarCopaMundoFinalizadas,
+  buscarChampionsFinalizadas,
   buscarCopaBrasilFinalizadas
 } from "../servicos/partidaFinalizada.servico.js"
 
@@ -27,9 +27,9 @@ export async function getFinalizadasBrasileirao(req, res, next) {
   }
 }
 
-export async function getFinalizadasCopaMundo(req, res, next) {
+export async function getFinalizadasChampions(req, res, next) {
   try {
-    const partidas = await buscarCopaMundoFinalizadas()
+    const partidas = await buscarChampionsFinalizadas()
     res.json(partidas)
   } catch (err) {
     next(err)

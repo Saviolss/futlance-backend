@@ -573,10 +573,10 @@ export function buscarCopaBrasilAoVivo() {
 
 }
 
-export function buscarCopaMundoAoVivo() {
+export function buscarChampionsAoVivo() {
 
   return buscarPartidasAoVivoCampeonato(
-    CAMPEONATOS.COPAMUNDO
+    CAMPEONATOS.CHAMPIONS
   )
 
 }

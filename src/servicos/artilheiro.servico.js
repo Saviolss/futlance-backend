@@ -225,9 +225,9 @@ export function buscarArtilheirosBrasileirao() {
   )
 }
 
-export function buscarArtilheirosCopaMundo() {
+export function buscarArtilheirosChampions() {
   return buscarArtilheirosCampeonato(
-    CAMPEONATOS.COPAMUNDO
+    CAMPEONATOS.CHAMPIONS
   )
 }
 

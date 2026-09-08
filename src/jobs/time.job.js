@@ -66,26 +66,7 @@ export function iniciarJobTimes() {
                 time.escudo,
 
               slug:
-                time.slug,
-
-              tecnicoNome:
-                time.tecnico?.nome || null,
-
-              tecnicoPais:
-                time.tecnico?.pais || null,
-
-
-              idadeMedia:
-                time.idadeMedia || null,
-
-              alturaMedia:
-                time.alturaMedia || null,
-
-              camisa10:
-                time.camisa10 || null,
-
-              jogadoresNoPais:
-                time.jogadoresNoPais || 0
+                time.slug
             },
 
             create: {
@@ -106,69 +87,9 @@ export function iniciarJobTimes() {
                 time.escudo,
 
               slug:
-                time.slug,
-
-              tecnicoNome:
-                time.tecnico?.nome || null,
-
-              tecnicoPais:
-                time.tecnico?.pais || null,
-
-              idadeMedia:
-                time.idadeMedia || null,
-
-              alturaMedia:
-                time.alturaMedia || null,
-
-              camisa10:
-                time.camisa10 || null,
-
-              jogadoresNoPais:
-                time.jogadoresNoPais || 0
+                time.slug
             }
           })
-
-          /* ==========================
-             ELENCO
-          ========================== */
-
-          await prisma.elenco.deleteMany({
-            where: {
-              timeId: time.time_id
-            }
-          })
-
-          if (time.elenco?.length) {
-
-            await prisma.elenco.createMany({
-
-              data: time.elenco.map(
-                jogador => ({
-
-                  timeId:
-                    time.time_id,
-
-                  numeroCamisa:
-                    jogador.numero_camisa,
-
-                  nome:
-                    jogador.nome,
-
-                  nomeCompleto:
-                    jogador.nome_completo,
-
-                  posicao:
-                    jogador.posicao,
-
-                  clube:
-                    jogador.clube,
-
-                  alturaCm:
-                    jogador.altura_cm
-                })
-              )
-            })
-          }
 
           /* ==========================
              PARTIDAS

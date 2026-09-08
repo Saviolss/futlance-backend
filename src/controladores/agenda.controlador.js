@@ -1,6 +1,6 @@
 import {
   buscarAgendaBrasileirao,
-  buscarAgendaCopaMundo,
+  buscarAgendaChampions,
   buscarAgendaCopaBrasil
 } from "../servicos/agenda.servico.js"
 
@@ -10,11 +10,11 @@ import {
 async function buscarAgendaGeralInterno() {
   const [
     brasileirao,
-    copaMundo,
+    champions,
     copaBrasil
   ] = await Promise.allSettled([
     buscarAgendaBrasileirao(),
-    buscarAgendaCopaMundo(),
+    buscarAgendaChampions(),
     buscarAgendaCopaBrasil()
   ])
 
@@ -23,8 +23,8 @@ async function buscarAgendaGeralInterno() {
       ? brasileirao.value
       : []),
 
-    ...(copaMundo.status === "fulfilled"
-      ? copaMundo.value
+    ...(champions.status === "fulfilled"
+      ? champions.value
       : []),
 
     ...(copaBrasil.status === "fulfilled"
@@ -79,9 +79,9 @@ export async function getAgendaBrasileirao(req, res, next) {
   }
 }
 
-export async function getAgendaCopaMundo(req, res, next) {
+export async function getAgendaChampions(req, res, next) {
   try {
-    const agenda = await buscarAgendaCopaMundo()
+    const agenda = await buscarAgendaChampions()
     res.json(agenda)
   } catch (erro) {
     next(erro)

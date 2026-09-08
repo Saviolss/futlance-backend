@@ -34,8 +34,8 @@ async function executarJobAgenda() {
       ),
 
       atualizarAgendaCampeonato(
-        CAMPEONATOS.COPAMUNDO,
-        "Copa do Mundo"
+        CAMPEONATOS.CHAMPIONS,
+        "Champions League"
       )
 
     ])

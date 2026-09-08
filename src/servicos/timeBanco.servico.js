@@ -33,17 +33,6 @@ export async function buscarTimePorSlugBanco(slug) {
     return null
   }
 
-  const elenco = await prisma.elenco.findMany({
-
-    where: {
-      timeId: time.timeId
-    },
-
-    orderBy: {
-      numeroCamisa: "asc"
-    }
-  })
-
   const proximasPartidas =
     await prisma.partida.findMany({
 
@@ -58,7 +47,6 @@ export async function buscarTimePorSlugBanco(slug) {
 
   return {
     ...time,
-    elenco,
     proximasPartidas
   }
 }

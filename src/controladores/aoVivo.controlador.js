@@ -28,11 +28,11 @@ export function getAoVivoCopaBrasil(req, res) {
   })
 }
 
-export function getAoVivoCopaMundo(req, res) {
+export function getAoVivoChampions(req, res) {
   const partidas = obterTodasPartidasAoVivo()
 
   res.json({
     atualizadoEm: new Date().toISOString(),
-    campeonatos: partidas["copamundo"] || []
+    campeonatos: partidas["champions"] || []
   })
 }

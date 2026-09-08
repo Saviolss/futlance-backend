@@ -580,9 +580,9 @@ export function buscarTabelaBrasileirao() {
   )
 }
 
-export function buscarTabelaCopaMundo() {
+export function buscarTabelaChampions() {
   return buscarTabelaCampeonato(
-    CAMPEONATOS.COPAMUNDO
+    CAMPEONATOS.CHAMPIONS
   )
 }
 

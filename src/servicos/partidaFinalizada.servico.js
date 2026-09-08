@@ -418,17 +418,17 @@ export async function buscarTodasFinalizadas() {
   const [
     brasileirao,
     copaBrasil,
-    copaMundo
+    Champions
   ] = await Promise.allSettled([
     buscarBrasileiraoFinalizadas(),
     buscarCopaBrasilFinalizadas(),
-    buscarCopaMundoFinalizadas()
+    buscarChampionsFinalizadas()
   ])
 
   return [
     ...(brasileirao.status === "fulfilled" ? brasileirao.value : []),
     ...(copaBrasil.status === "fulfilled" ? copaBrasil.value : []),
-    ...(copaMundo.status === "fulfilled" ? copaMundo.value : [])
+    ...(Champions.status === "fulfilled" ? Champions.value : [])
   ]
 }
 
@@ -439,8 +439,8 @@ export function buscarBrasileiraoFinalizadas() {
   return buscarFinalizadasCampeonato(CAMPEONATOS.BRASILEIRAO)
 }
 
-export function buscarCopaMundoFinalizadas() {
-  return buscarFinalizadasCampeonato(CAMPEONATOS.COPAMUNDO)
+export function buscarChampionsFinalizadas() {
+  return buscarFinalizadasCampeonato(CAMPEONATOS.CHAMPIONS)
 }
 
 export function buscarCopaBrasilFinalizadas() {

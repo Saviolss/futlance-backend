@@ -1,6 +1,6 @@
 import {
   buscarTabelaBrasileirao,
-  buscarTabelaCopaMundo,
+  buscarTabelaChampions,
   buscarTabelaCopaBrasil
 } from "../servicos/tabela.servico.js"
 
@@ -20,11 +20,11 @@ export async function getTabelaBrasileirao(req, res, next) {
 }
 
 /* =========================================================
-   COPA DO MUNDO
+   CHAMPIONS LEAGUE
 ========================================================= */
-export async function getTabelaCopaMundo(req, res, next) {
+export async function getTabelaChampions(req, res, next) {
   try {
-    const tabela = await buscarTabelaCopaMundo()
+    const tabela = await buscarTabelaChampions()
     res.json(tabela)
   } catch (erro) {
     next(erro)

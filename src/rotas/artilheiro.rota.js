@@ -1,13 +1,13 @@
 import { Router } from "express"
 import {
   getArtilheirosBrasileirao, 
-  getArtilheirosCopaMundo, getArtilheirosCopaBrasil
+  getArtilheirosChampions, getArtilheirosCopaBrasil
  } from "../controladores/artilheiro.controlador.js"
 
 const router = Router()
 
 router.get("/brasileirao", getArtilheirosBrasileirao)
-  router.get("/copamundo", getArtilheirosCopaMundo)
+  router.get("/champions", getArtilheirosChampions)
 router.get("/copabrasil", getArtilheirosCopaBrasil)
 
 export default router

@@ -92,9 +92,5 @@ export function buscarProximasPartidasTimeApi(timeId) {
     "Erro ao buscar próximas partidas do time"
   )
 }
-export function buscarElencosCopaApi(idCampeonato) {
-  return requestApiFutebol(
-    `/campeonatos/${idCampeonato}/elencos`,
-    "Erro ao buscar elencos da Copa"
-  )
-}
+
+  

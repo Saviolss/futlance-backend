@@ -389,10 +389,10 @@ export function buscarAgendaBrasileirao() {
    🔹 COPA DO MUNDO
 ========================================================= */
 
-export function buscarAgendaCopaMundo() {
+export function buscarAgendaChampions() {
 
   return buscarAgendaBanco(
-    CAMPEONATOS.COPAMUNDO
+    CAMPEONATOS.CHAMPIONS
   )
 
 }
@@ -421,13 +421,13 @@ export function buscarAgendaGeral() {
 
     buscarAgendaCopaBrasil(),
 
-    buscarAgendaCopaMundo()
+    buscarAgendaChampions()
 
   ]).then(([
 
     brasileirao,
     copaBrasil,
-    copaMundo
+    champions
 
   ]) => {
 
@@ -441,8 +441,8 @@ export function buscarAgendaGeral() {
         ? copaBrasil.value
         : []),
 
-      ...(copaMundo.status === "fulfilled"
-        ? copaMundo.value
+      ...(champions.status === "fulfilled"
+        ? champions.value
         : [])
     ]
 

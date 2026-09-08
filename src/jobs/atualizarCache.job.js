@@ -10,13 +10,13 @@ import {
 
 import {
   buscarAgendaBrasileirao,
-  buscarAgendaCopaMundo,
+  buscarAgendaChampions,
   buscarAgendaCopaBrasil
 } from "../servicos/agenda.servico.js"
 
 import {
   buscarArtilheirosBrasileirao,
-  buscarArtilheirosCopaMundo,
+  buscarArtilheirosChampions,
   buscarArtilheirosCopaBrasil,
   atualizarArtilhariaCampeonato
 } from "../servicos/artilheiro.servico.js"
@@ -38,7 +38,7 @@ export function iniciarJobs() {
         ),
 
         atualizarTabelaCampeonato(
-          CAMPEONATOS.COPAMUNDO
+          CAMPEONATOS.CHAMPIONS
         )
 
       ])
@@ -65,7 +65,7 @@ export function iniciarJobs() {
 
       await Promise.all([
         buscarAgendaBrasileirao(),
-        buscarAgendaCopaMundo(),
+        buscarAgendaChampions(),
         buscarAgendaCopaBrasil(),
       ])
 
@@ -84,7 +84,7 @@ export function iniciarJobs() {
 
       await Promise.all([
         atualizarArtilhariaCampeonato(CAMPEONATOS.BRASILEIRAO),
-        atualizarArtilhariaCampeonato(CAMPEONATOS.COPAMUNDO),
+        atualizarArtilhariaCampeonato(CAMPEONATOS.CHAMPIONS),
         atualizarArtilhariaCampeonato(CAMPEONATOS.COPABRASIL),
       ]);
 

@@ -1,7 +1,7 @@
 import {
   buscarTodasAoVivo,
   buscarBrasileiraoAoVivo,
-  buscarCopaMundoAoVivo,
+  buscarChampionsAoVivo,
   buscarCopaBrasilAoVivo
 
 } from "../servicos/partidaLive.servico.js"
@@ -40,15 +40,15 @@ export async function getHome(req, res, next) {
 ====================================================== */
 export async function getAoVivoWidget(req, res, next) {
   try {
-    const [brasileirao, copaMundo, copaBrasil] = await Promise.allSettled([
+    const [brasileirao, champions, copaBrasil] = await Promise.allSettled([
       buscarBrasileiraoAoVivo(),
-      buscarCopaMundoAoVivo(),
+      buscarChampionsAoVivo(),
       buscarCopaBrasilAoVivo()
     ])
 
     const dados = [
       ...(brasileirao.status === "fulfilled" ? brasileirao.value : []),
-      ...(copaMundo.status === "fulfilled" ? copaMundo.value : []),
+      ...(champions.status === "fulfilled" ? champions.value : []),
       ...(copaBrasil.status === "fulfilled" ? copaBrasil.value : [])
     ]
 
@@ -88,9 +88,9 @@ export async function getBrasileiraoAoVivo(req, res, next) {
   }
 }
 
-export async function getCopaMundoAoVivo(req, res, next) {
+export async function getChampionsAoVivo(req, res, next) {
   try {
-    const partidas = await buscarCopaMundoAoVivo()
+    const partidas = await buscarChampionsAoVivo()
     res.json({
       tipo: "ao-vivo",
       dados: partidas
