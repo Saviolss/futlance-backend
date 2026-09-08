@@ -7,28 +7,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Time {
-  id                 Int      @id @default(autoincrement())
+model Usuario {
+  id                String    @id @default(uuid())
+  googleId          String?   @unique
+  nome              String
+  email             String    @unique
+  emailVerificado   Boolean   @default(false)
+  senhaHash         String?
+  aceitouPolitica   Boolean   @default(false)
+  aceitouPoliticaEm DateTime?
+  ativo             Boolean   @default(true)
+  timeId            Int?
+  whatsapp          String?
+  idioma            String    @default("pt")
+  criadoEm          DateTime  @default(now())
+  atualizadoEm      DateTime  @updatedAt
+  codigosVerificacao CodigoVerificacao[]
+  time               Time?     @relation(fields: [timeId], references: [timeId], onDelete: SetNull)
+  assinaturas        Assinatura[]
+}
 
-  timeId             Int      @unique
+model Assinatura {
+  id                 String    @id @default(uuid())
+  usuarioId          String
+  timeId             Int?
+  whatsapp           String
+  idioma             String
+  formaPagamento     String
+  plano              String
+  status             String    @default("PENDENTE")
+  inicioEm           DateTime?
+  fimEm              DateTime?
+  criadoEm           DateTime  @default(now())
+  atualizadoEm       DateTime  @updatedAt
+
+  usuario            Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  time               Time?     @relation(fields: [timeId], references: [timeId], onDelete: SetNull)
+
+  @@index([usuarioId])
+  @@index([timeId])
+  @@index([status])
+}
+
+model Time {
+  id                 Int       @id @default(autoincrement())
+  timeId             Int       @unique
   nome               String
   nomePopular        String
   sigla              String?
   escudo             String?
-  slug               String   @unique
-
+  slug               String    @unique
   tecnicoNome        String?
   tecnicoPais        String?
-
   idadeMedia         Float?
   alturaMedia        Float?
-
   camisa10           String?
-
   jogadoresNoPais    Int?
-
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  usuarios           Usuario[]
+  assinaturas       Assinatura[]
 }
 
 model Elenco {
@@ -260,21 +298,17 @@ model Noticia {
   @@index([data])
 }
 
-model Usuario {
-  id                Int      @id @default(autoincrement())
-
-  googleId          String   @unique
-  nome              String
-  email             String   @unique
-
-  idioma            String   @default("pt")
-
-  aceitouPolitica   Boolean  @default(false)
-  aceitouPoliticaEm DateTime?
-
-  ativo             Boolean  @default(true)
-
-  criadoEm          DateTime @default(now())
-  atualizadoEm      DateTime @updatedAt
-
+model CodigoVerificacao {
+  id          String      @id @default(uuid())
+  usuarioId   String
+  codigoHash  String
+  tipo        String
+  expiracao   DateTime
+  usado       Boolean  @default(false)
+  tentativas  Int      @default(0)
+  criadoEm    DateTime @default(now())
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  @@index([usuarioId])
+  @@index([tipo])
+  @@index([expiracao])
 }

@@ -106,15 +106,6 @@ export function iniciarJobPartidas() {
       const novoHashAoVivo =
         gerarHash(aoVivo)
 
-      console.log(
-        "Hash antigo:",
-        ultimoHashAoVivo
-      )
-
-      console.log(
-        "Hash novo :",
-        novoHashAoVivo
-      )
 
       /* ============================
          📡 WEBSOCKET AO VIVO
@@ -178,7 +169,7 @@ export function iniciarJobPartidas() {
 
           ? 60 * 1000
 
-          : 90 * 1000
+          : 120 * 1000
 
     /* ============================
        LOG

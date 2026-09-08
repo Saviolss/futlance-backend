@@ -1,3 +1,4 @@
+
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
 import { PrismaClient } from "@prisma/client"
 
@@ -147,7 +148,7 @@ export async function salvarPartidaFinalizada(partida) {
     if (!normalizada.campeonato.campeonato_id) {
 
       console.error(
-        `❌ Partida ${ normalizada.partida_id } sem campeonato_id`
+        `❌ Partida ${normalizada.partida_id} sem campeonato_id`
       )
 
       return null
@@ -157,7 +158,7 @@ export async function salvarPartidaFinalizada(partida) {
     if (!statusEhFinalizado(normalizada.status)) {
 
       console.log(
-        `⚠️ Partida ${ normalizada.partida_id } ainda não está finalizada.Status: ${ normalizada.status } `
+        `⚠️ Partida ${normalizada.partida_id} ainda não está finalizada.Status: ${normalizada.status} `
       )
 
       return null
@@ -265,11 +266,11 @@ export async function salvarPartidaFinalizada(partida) {
       })
 
     console.log(
-      `🏁 Partida ${ normalizada.partida_id } salva em partidaFinalizada`
+      `🏁 Partida ${normalizada.partida_id} salva em partidaFinalizada`
     )
 
     console.log(
-      `⚽ ${ normalizada.mandante.nome } ${ normalizada.placar_mandante } x ${ normalizada.placar_visitante } ${ normalizada.visitante.nome } `
+      `⚽ ${normalizada.mandante.nome} ${normalizada.placar_mandante} x ${normalizada.placar_visitante} ${normalizada.visitante.nome} `
     )
 
     return partidaSalva
@@ -277,7 +278,7 @@ export async function salvarPartidaFinalizada(partida) {
   } catch (erro) {
 
     console.error(
-      `❌ Erro ao salvar partida finalizada ${ partida.partida_id }: `,
+      `❌ Erro ao salvar partida finalizada ${partida.partida_id}: `,
       erro.message
     )
 
@@ -314,7 +315,7 @@ export async function atualizarFinalizadasCampeonato(
       )
 
     console.log(
-      `🏁 Finalizadas encontradas no banco campeonato ${ idCampeonato }: ${ partidas.length } `
+      `🏁 Finalizadas encontradas no banco campeonato ${idCampeonato}: ${partidas.length} `
     )
 
     return partidas
@@ -322,7 +323,7 @@ export async function atualizarFinalizadasCampeonato(
   } catch (erro) {
 
     console.error(
-      `❌ Erro ao atualizar finalizadas campeonato ${ idCampeonato }: `,
+      `❌ Erro ao atualizar finalizadas campeonato ${idCampeonato}: `,
       erro.message
     )
 
@@ -429,7 +430,7 @@ export async function buscarFinalizadasCampeonato(
 
     console.error(
 
-      `❌ Erro ao buscar partidas finalizadas ${ idCampeonato }: `,
+      `❌ Erro ao buscar partidas finalizadas ${idCampeonato}: `,
 
       erro.message
 

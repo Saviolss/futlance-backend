@@ -1,9 +1,9 @@
+import "dotenv/config"
 import express from "express"
 import cors from "cors"
 import helmet from "helmet"
 import rateLimit from "express-rate-limit"
 import cookieParser from "cookie-parser"
-import dotenv from "dotenv"
 
 // ============================================================
 // ROTAS EXISTENTES
@@ -21,12 +21,13 @@ import artilheiroRotas from "./rotas/artilheiro.rota.js"
 import noticia from "./noticias/noticia.rotas.js"
 import time from "./rotas/time.rotas.js"
 import autenticacaoRotas from "./assistenteTorcedor/autenticacao/autenticacao.routes.js"
-
+import assinaturaRotas from "./assistenteTorcedor/assinatura/assinatura.router.js"
+import pagamentoRotas from "./assistenteTorcedor/pagamento/pagamento.router.js"
+import stripeWebhookRotas from "./assistenteTorcedor/pagamento/stripe.webhook.routes.js"
 // ============================================================
 // VARIÁVEIS DE AMBIENTE
 // ============================================================
 
-dotenv.config()
 
 const app = express()
 
@@ -141,6 +142,15 @@ app.use(
   limitador
 )
 
+// ------------------------------------------------------------
+// ROTA DE WEBHOOK DO STRIPE
+// ------------------------------------------------------------
+
+app.use(
+  "/pagamento/stripe",
+  stripeWebhookRotas
+)
+
 
 // ------------------------------------------------------------
 // PARSER JSON
@@ -233,6 +243,16 @@ app.use(
 app.use(
   "/auth",
   autenticacaoRotas
+)
+
+app.use(
+  "/assinatura",
+  assinaturaRotas
+)
+
+app.use(
+  "/pagamento",
+  pagamentoRotas
 )
 
 

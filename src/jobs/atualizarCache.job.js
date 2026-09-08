@@ -76,9 +76,9 @@ export function iniciarJobs() {
   })
 
   // ======================
-  // ARTILHEIROS – a cada 40 min
+  // ARTILHEIROS – a cada 45 min
   // ======================
-  cron.schedule("*/40 * * * *", async () => {
+  cron.schedule("*/45 * * * *", async () => {
     try {
       console.log("🔄 Atualizando cache dos artilheiros...");
 
