@@ -54,7 +54,9 @@ export async function entrarComGoogle(req, res) {
 
     return res.status(resultado.criado ? 201 : 200).json({
       sucesso: true,
-      mensagem: resultado.criado ? "Conta criada com sucesso." : "Login realizado com sucesso.",
+      mensagem: resultado.criado
+        ? "Conta criada com sucesso."
+        : "Login realizado com sucesso.",
       usuario: resultado.usuario
     })
   } catch (erro) {
@@ -252,14 +254,16 @@ export async function reenviarCodigo(req, res) {
       })
     }
 
-    const resultado = await autenticacaoService.reenviarCodigoConfirmacao({
-      email
-    })
+    const resultado =
+      await autenticacaoService.reenviarCodigoConfirmacao({
+        email
+      })
 
     return res.status(200).json({
       sucesso: true,
       enviado: resultado.enviado,
-      mensagem: "Se o e-mail estiver cadastrado e ainda não confirmado, um novo código será enviado."
+      mensagem:
+        "Se o e-mail estiver cadastrado e ainda não confirmado, um novo código será enviado."
     })
   } catch (erro) {
     console.error("Erro ao reenviar código:", erro)
@@ -293,17 +297,21 @@ export async function entrarComEmail(req, res) {
   try {
     const { email, senha } = req.body
 
-    if (typeof email !== "string" || typeof senha !== "string") {
+    if (
+      typeof email !== "string" ||
+      typeof senha !== "string"
+    ) {
       return res.status(400).json({
         sucesso: false,
         mensagem: "E-mail ou senha inválidos."
       })
     }
 
-    const resultado = await autenticacaoService.autenticarComEmail({
-      email,
-      senha
-    })
+    const resultado =
+      await autenticacaoService.autenticarComEmail({
+        email,
+        senha
+      })
 
     criarCookieSessao(res, resultado.token)
 
@@ -358,17 +366,22 @@ export async function esqueciSenha(req, res) {
       })
     }
 
-    const resultado = await autenticacaoService.esqueciSenha({
-      email
-    })
+    const resultado =
+      await autenticacaoService.esqueciSenha({
+        email
+      })
 
     return res.status(200).json({
       sucesso: true,
       enviado: resultado.enviado,
-      mensagem: "Se o e-mail estiver cadastrado, enviaremos um código para redefinir sua senha."
+      mensagem:
+        "Se o e-mail estiver cadastrado, enviaremos um código para redefinir sua senha."
     })
   } catch (erro) {
-    console.error("Erro ao solicitar redefinição de senha:", erro)
+    console.error(
+      "Erro ao solicitar redefinição de senha:",
+      erro
+    )
 
     if (erro.codigo === "EMAIL_INVALIDO") {
       return res.status(400).json({
@@ -395,9 +408,9 @@ export async function esqueciSenha(req, res) {
 // POST /auth/redefinir-senha
 // ============================================================
 
-export async function redefinirSenha(req, res) {
+export async function confirmarCodigoRecuperacao(req, res) {
   try {
-    const { email, codigo, novaSenha } = req.body
+    const { email, codigo } = req.body
 
     if (typeof email !== "string" || !email.trim()) {
       return res.status(400).json({
@@ -413,6 +426,77 @@ export async function redefinirSenha(req, res) {
       })
     }
 
+    const resultado = await autenticacaoService.confirmarCodigoRecuperacao({
+      email,
+      codigo
+    })
+
+    return res.status(200).json({
+      sucesso: true,
+      valido: resultado.valido,
+      usuarioId: resultado.usuarioId,
+      email: resultado.email,
+      mensagem: "Código validado com sucesso."
+    })
+  } catch (erro) {
+    console.error("Erro ao confirmar código de recuperação:", erro)
+
+    if (erro.codigo === "EMAIL_INVALIDO") {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: "E-mail inválido."
+      })
+    }
+
+    if (erro.codigo === "CODIGO_INVALIDO") {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: "Código inválido ou expirado."
+      })
+    }
+
+    if (erro.codigo === "USUARIO_BLOQUEADO") {
+      return res.status(403).json({
+        sucesso: false,
+        mensagem: "Esta conta está bloqueada."
+      })
+    }
+
+    if (erro.codigo === "CONTA_SEM_SENHA") {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: "Esta conta não possui senha para redefinir."
+      })
+    }
+
+    return res.status(500).json({
+      sucesso: false,
+      mensagem: "Não foi possível validar o código."
+    })
+  }
+}
+
+export async function redefinirSenha(req, res) {
+  try {
+    const { email, codigo, novaSenha } = req.body
+
+    if (typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: "E-mail é obrigatório."
+      })
+    }
+
+    if (
+      typeof codigo !== "string" ||
+      !/^\d{6}$/.test(codigo)
+    ) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: "Código inválido ou expirado."
+      })
+    }
+
     if (typeof novaSenha !== "string") {
       return res.status(400).json({
         sucesso: false,
@@ -420,21 +504,26 @@ export async function redefinirSenha(req, res) {
       })
     }
 
-    const resultado = await autenticacaoService.redefinirSenha({
-      email,
-      codigo,
-      novaSenha
-    })
+    const resultado =
+      await autenticacaoService.redefinirSenha({
+        email,
+        codigo,
+        novaSenha
+      })
 
     removerCookieSessao(res)
 
     return res.status(200).json({
       sucesso: true,
       redefinida: resultado.redefinida,
-      mensagem: "Senha redefinida com sucesso. Faça login novamente."
+      mensagem:
+        "Senha redefinida com sucesso. Faça login novamente."
     })
   } catch (erro) {
-    console.error("Erro ao redefinir senha:", erro)
+    console.error(
+      "Erro ao redefinir senha:",
+      erro
+    )
 
     if (erro.codigo === "EMAIL_INVALIDO") {
       return res.status(400).json({
@@ -446,7 +535,8 @@ export async function redefinirSenha(req, res) {
     if (erro.codigo === "SENHA_INVALIDA") {
       return res.status(400).json({
         sucesso: false,
-        mensagem: "A senha deve ter pelo menos 6 caracteres, um número e um caractere especial."
+        mensagem:
+          "A senha deve ter pelo menos 6 caracteres, um número e um caractere especial."
       })
     }
 
@@ -484,7 +574,10 @@ export async function redefinirSenha(req, res) {
 
 export async function sessao(req, res, next) {
   try {
-    const usuario = await autenticacaoService.buscarSessao(req.usuarioId)
+    const usuario =
+      await autenticacaoService.buscarSessao(
+        req.usuarioId
+      )
 
     return res.status(200).json({
       sucesso: true,
@@ -493,6 +586,116 @@ export async function sessao(req, res, next) {
     })
   } catch (erro) {
     next(erro)
+  }
+}
+
+// ============================================================
+// PUT /auth/perfil
+// ============================================================
+
+export async function atualizarPerfil(req, res) {
+  try {
+    const usuarioId = req.usuarioId
+
+    if (!usuarioId) {
+      return res.status(401).json({
+        sucesso: false,
+        codigo: "USUARIO_NAO_AUTENTICADO",
+        mensagem: "Usuário não autenticado."
+      })
+    }
+
+    const { idioma, whatsapp } = req.body
+
+    const usuario =
+      await autenticacaoService.atualizarPerfil(
+        usuarioId,
+        {
+          idioma,
+          whatsapp
+        }
+      )
+
+    return res.status(200).json({
+      sucesso: true,
+      mensagem: "Perfil atualizado com sucesso.",
+      usuario
+    })
+  } catch (erro) {
+    console.error(
+      "Erro ao atualizar perfil:",
+      erro
+    )
+
+    const errosConhecidos = {
+      USUARIO_INVALIDO: 400,
+      USUARIO_NAO_AUTENTICADO: 401,
+      USUARIO_NAO_ENCONTRADO: 404,
+      USUARIO_BLOQUEADO: 403,
+      WHATSAPP_INVALIDO: 400
+    }
+
+    const status =
+      errosConhecidos[erro.codigo] || 500
+
+    return res.status(status).json({
+      sucesso: false,
+      codigo: erro.codigo || "ERRO_INTERNO",
+      mensagem:
+        erro.message ||
+        "Não foi possível atualizar seu perfil."
+    })
+  }
+}
+
+// ============================================================
+// DELETE /auth/conta
+// ============================================================
+
+export async function excluirConta(req, res) {
+  try {
+    const usuarioId = req.usuarioId
+
+    if (!usuarioId) {
+      return res.status(401).json({
+        sucesso: false,
+        codigo: "USUARIO_NAO_AUTENTICADO",
+        mensagem: "Usuário não autenticado."
+      })
+    }
+
+    const resultado =
+      await autenticacaoService.excluirConta(
+        usuarioId
+      )
+
+    removerCookieSessao(res)
+
+    return res.status(200).json(resultado)
+  } catch (erro) {
+    console.error(
+      "Erro ao excluir conta:",
+      erro
+    )
+
+    const errosConhecidos = {
+      USUARIO_INVALIDO: 400,
+      USUARIO_NAO_AUTENTICADO: 401,
+      USUARIO_NAO_ENCONTRADO: 404,
+      USUARIO_BLOQUEADO: 403,
+      ERRO_STRIPE_EXCLUSAO: 502
+    }
+
+    const status =
+      errosConhecidos[erro.codigo] || 500
+
+    return res.status(status).json({
+      sucesso: false,
+      codigo: erro.codigo || "ERRO_INTERNO",
+      mensagem:
+        erro.message ||
+        "Não foi possível excluir sua conta."
+    })
   }
 }
 

@@ -5,10 +5,6 @@ import helmet from "helmet"
 import rateLimit from "express-rate-limit"
 import cookieParser from "cookie-parser"
 
-// ============================================================
-// ROTAS EXISTENTES
-// ============================================================
-
 import home from "./rotas/home.rotas.js"
 import tabelaRotas from "./rotas/tabela.rotas.js"
 import agendaRotas from "./rotas/agenda.rotas.js"
@@ -24,298 +20,87 @@ import autenticacaoRotas from "./assistenteTorcedor/autenticacao/autenticacao.ro
 import assinaturaRotas from "./assistenteTorcedor/assinatura/assinatura.router.js"
 import pagamentoRotas from "./assistenteTorcedor/pagamento/pagamento.router.js"
 import stripeWebhookRotas from "./assistenteTorcedor/pagamento/stripe.webhook.routes.js"
-// ============================================================
-// VARIÁVEIS DE AMBIENTE
-// ============================================================
-
+import whatsappWebhookRotas from "./assistenteTorcedor/whatsapp/whatsapp.webhook.rotas.js"
 
 const app = express()
 
+// SEGURANÇA
+app.use(helmet())
 
-/* ============================================================
-   SEGURANÇA
-============================================================ */
-
-// ------------------------------------------------------------
-// HEADERS DE SEGURANÇA
-// ------------------------------------------------------------
-
-app.use(
-  helmet()
-)
-
-
-// ------------------------------------------------------------
 // CORS
-// ------------------------------------------------------------
-
 const origensPermitidas = [
-  "https://futlance.com",
-  "https://www.futlance.com"
-]
+  process.env.FRONTEND_URL,
+].filter(Boolean)
 
-if (process.env.NODE_ENV !== "production") {
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || origensPermitidas.includes(origin)) return callback(null, true)
+    return callback(new Error("Origem não autorizada pelo CORS."))
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}))
 
-  origensPermitidas.push(
-    "http://localhost:3000"
-  )
 
-}
 
+// RATE LIMIT
+const limitador = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { erro: "Muitas requisições. Tente novamente em alguns instantes." }
+})
+app.use(limitador)
+
+// WEBHOOK STRIPE
+app.use("/pagamento/stripe", stripeWebhookRotas)
+
+// WEBHOOK WHATSAPP
+// O corpo precisa permanecer em formato Buffer para validar a assinatura da Meta.
 app.use(
-  cors({
-    origin: function (origin, callback) {
-
-      // Permite requisições sem Origin
-      // como algumas chamadas internas,
-      // ferramentas e monitoramento.
-
-      if (!origin) {
-
-        return callback(null, true)
-
-      }
-
-      if (
-        origensPermitidas.includes(origin)
-      ) {
-
-        return callback(null, true)
-
-      }
-
-      return callback(
-        new Error(
-          "Origem não autorizada pelo CORS."
-        )
-      )
-
-    },
-
-    credentials: true,
-
-    methods: [
-      "GET",
-      "POST",
-      "PATCH",
-      "DELETE",
-      "OPTIONS"
-    ],
-
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization"
-    ]
-
-  })
+  "/webhook/whatsapp",
+  express.raw({ type: "application/json", limit: "1mb" }),
+  whatsappWebhookRotas
 )
 
+// PARSER JSON PARA AS DEMAIS ROTAS
+app.use(express.json({ limit: "1mb" }))
+app.use(cookieParser())
 
-// ------------------------------------------------------------
-// RATE LIMIT
-// ------------------------------------------------------------
+// ROTAS EXISTENTES
+app.use("/", home)
+app.use("/status", statusRotas)
+app.use("/tabela", tabelaRotas)
+app.use("/agenda", agendaRotas)
+app.use("/api", aoVivoRotas)
+app.use("/api", agendaGeral)
+app.use("/api", encerradasRotas)
+app.use("/campeonatos", campeonatosRotas)
+app.use("/artilheiros", artilheiroRotas)
+app.use("/home", noticia)
+app.use("/api", time)
 
-const limitador = rateLimit({
+// ASSISTENTE DO TORCEDOR
+app.use("/auth", autenticacaoRotas)
+app.use("/assinatura", assinaturaRotas)
+app.use("/pagamento", pagamentoRotas)
 
-  windowMs:
-    1 * 60 * 1000,
-
-  max:
-    100,
-
-  standardHeaders:
-    true,
-
-  legacyHeaders:
-    false,
-
-  message: {
-
-    erro:
-      "Muitas requisições. Tente novamente em alguns instantes."
-
-  }
-
+// ROTA NÃO ENCONTRADA
+app.use((req, res) => {
+  return res.status(404).json({ erro: "Rota não encontrada." })
 })
 
-app.use(
-  limitador
-)
+// TRATAMENTO DE ERROS
+app.use((err, req, res, next) => {
+  console.error("Erro interno:", err)
 
-// ------------------------------------------------------------
-// ROTA DE WEBHOOK DO STRIPE
-// ------------------------------------------------------------
-
-app.use(
-  "/pagamento/stripe",
-  stripeWebhookRotas
-)
-
-
-// ------------------------------------------------------------
-// PARSER JSON
-// ------------------------------------------------------------
-
-app.use(
-  express.json({
-    limit: "1mb"
-  })
-)
-
-
-// ------------------------------------------------------------
-// COOKIE PARSER
-// ------------------------------------------------------------
-
-app.use(
-  cookieParser()
-)
-
-
-/* ============================================================
-   ROTAS
-============================================================ */
-
-// ------------------------------------------------------------
-// ROTAS EXISTENTES
-// ------------------------------------------------------------
-
-app.use(
-  "/",
-  home
-)
-
-app.use(
-  "/status",
-  statusRotas
-)
-
-app.use(
-  "/tabela",
-  tabelaRotas
-)
-
-app.use(
-  "/agenda",
-  agendaRotas
-)
-
-app.use(
-  "/api",
-  aoVivoRotas
-)
-
-app.use(
-  "/api",
-  agendaGeral
-)
-
-app.use(
-  "/api",
-  encerradasRotas
-)
-
-app.use(
-  "/campeonatos",
-  campeonatosRotas
-)
-
-app.use(
-  "/artilheiros",
-  artilheiroRotas
-)
-
-app.use(
-  "/home",
-  noticia
-)
-
-app.use(
-  "/api",
-  time
-)
-
-
-// ------------------------------------------------------------
-// ASSISTENTE DO TORCEDOR
-// ------------------------------------------------------------
-
-app.use(
-  "/auth",
-  autenticacaoRotas
-)
-
-app.use(
-  "/assinatura",
-  assinaturaRotas
-)
-
-app.use(
-  "/pagamento",
-  pagamentoRotas
-)
-
-
-/* ============================================================
-   ROTA NÃO ENCONTRADA
-============================================================ */
-
-app.use(
-  (req, res) => {
-
-    return res.status(404).json({
-
-      erro:
-        "Rota não encontrada."
-
-    })
-
+  if (err.message === "Origem não autorizada pelo CORS.") {
+    return res.status(403).json({ erro: "Origem não autorizada." })
   }
-)
 
-
-/* ============================================================
-   TRATAMENTO DE ERROS
-============================================================ */
-
-app.use(
-  (err, req, res, next) => {
-
-    console.error(
-      "Erro interno:",
-      err
-    )
-
-    // --------------------------------------------------------
-    // Erro de CORS
-    // --------------------------------------------------------
-
-    if (
-      err.message ===
-      "Origem não autorizada pelo CORS."
-    ) {
-
-      return res.status(403).json({
-
-        erro:
-          "Origem não autorizada."
-
-      })
-
-    }
-
-    // --------------------------------------------------------
-    // Erro genérico
-    // --------------------------------------------------------
-
-    return res.status(500).json({
-
-      erro:
-        "Erro interno do servidor."
-
-    })
-
-  }
-)
+  return res.status(500).json({ erro: "Erro interno do servidor." })
+})
 
 export default app

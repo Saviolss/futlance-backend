@@ -1,9 +1,55 @@
 import { BrevoClient } from "@getbrevo/brevo"
 
+const TENTATIVAS_ENVIO_EMAIL = 3
+const INTERVALO_RETRY_EMAIL_MS = 1000
+
+const CODIGOS_CONEXAO_RETENTAVEIS = new Set([
+  "UND_ERR_CONNECT_TIMEOUT",
+  "EAI_AGAIN",
+  "ECONNREFUSED",
+  "EHOSTUNREACH",
+  "ENETUNREACH"
+])
+
 
 // ============================================================
 // CONFIGURAÇÃO
 // ============================================================
+
+function obterCodigoErro(erro) {
+
+  let erroAtual = erro
+  const errosVisitados = new Set()
+
+  while (
+    erroAtual &&
+    typeof erroAtual === "object" &&
+    !errosVisitados.has(erroAtual)
+  ) {
+
+    errosVisitados.add(erroAtual)
+
+    if (erroAtual.code) {
+
+      return erroAtual.code
+
+    }
+
+    erroAtual = erroAtual.cause
+
+  }
+
+  return undefined
+
+}
+
+
+function aguardar(ms) {
+
+  return new Promise(resolve => setTimeout(resolve, ms))
+
+}
+
 
 function validarConfiguracao() {
 
@@ -117,13 +163,52 @@ export async function enviarEmail({
 
   }
 
-
   try {
 
-    const resposta =
-      await apiInstance.transactionalEmails.sendTransacEmail(
-        email
-      )
+    let resposta
+
+    for (
+      let tentativa = 1;
+      tentativa <= TENTATIVAS_ENVIO_EMAIL;
+      tentativa += 1
+    ) {
+
+      try {
+
+        resposta =
+          await apiInstance.transactionalEmails.sendTransacEmail(
+            email
+          )
+
+        break
+
+      } catch (erro) {
+
+        const codigoErro = obterCodigoErro(erro)
+        const podeTentarNovamente =
+          CODIGOS_CONEXAO_RETENTAVEIS.has(codigoErro)
+
+        if (
+          !podeTentarNovamente ||
+          tentativa === TENTATIVAS_ENVIO_EMAIL
+        ) {
+
+          throw erro
+
+        }
+
+        const intervalo =
+          INTERVALO_RETRY_EMAIL_MS * 2 ** (tentativa - 1)
+
+        console.warn(
+          `⚠️ Falha de conexão com Brevo (${codigoErro}); nova tentativa ${tentativa + 1}/${TENTATIVAS_ENVIO_EMAIL} em ${intervalo}ms.`
+        )
+
+        await aguardar(intervalo)
+
+      }
+
+    }
 
 
     console.log(

@@ -1,13 +1,12 @@
 import bcrypt from "bcrypt"
 
-import { PrismaClient } from "@prisma/client"
 
 import {
   enviarCodigoPorEmail
 } from "./email.service.js"
 
 
-const prisma = new PrismaClient()
+import { prisma } from "../../lib/prisma.js"
 
 
 // ============================================================

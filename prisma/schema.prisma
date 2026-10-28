@@ -28,22 +28,24 @@ model Usuario {
 }
 
 model Assinatura {
-  id                 String    @id @default(uuid())
-  usuarioId          String
-  timeId             Int?
-  whatsapp           String
-  idioma             String
-  formaPagamento     String
-  plano              String
-  status             String    @default("PENDENTE")
-  inicioEm           DateTime?
-  fimEm              DateTime?
-  criadoEm           DateTime  @default(now())
-  atualizadoEm       DateTime  @updatedAt
-
-  usuario            Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  time               Time?     @relation(fields: [timeId], references: [timeId], onDelete: SetNull)
-
+  id                   String    @id @default(uuid())
+  usuarioId            String
+  timeId               Int?
+  whatsapp             String
+  idioma               String
+  formaPagamento       String
+  plano                String
+  status               String    @default("PENDENTE")
+  inicioEm             DateTime?
+  fimEm                DateTime?
+  stripeSubscriptionId String?   @unique
+  canceladaEm          DateTime?
+  criadoEm              DateTime  @default(now())
+  atualizadoEm          DateTime  @updatedAt
+  usuario              Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  time                 Time?     @relation(fields: [timeId], references: [timeId], onDelete: SetNull)
+  notificacoes         NotificacaoEnviada[]
+  tarefasNotificacao   FilaNotificacao[]
   @@index([usuarioId])
   @@index([timeId])
   @@index([status])
@@ -66,7 +68,8 @@ model Time {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   usuarios           Usuario[]
-  assinaturas       Assinatura[]
+  assinaturas        Assinatura[]
+  noticias           NoticiaTime[]
 }
 
 model Elenco {
@@ -298,6 +301,28 @@ model Noticia {
   @@index([data])
 }
 
+model NoticiaTime {
+  id         Int      @id @default(autoincrement())
+  timeId     Int
+  titulo     String
+  descricao  String?
+  imagem     String?
+  fonte      String
+  url        String   @unique
+  idioma     String?
+  data       DateTime?
+  categoria  String[]
+  autor      String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  time       Time     @relation(fields: [timeId], references: [timeId], onDelete: Cascade)
+
+  @@index([timeId])
+  @@index([data])
+  @@index([timeId, data])
+}
+
 model CodigoVerificacao {
   id          String      @id @default(uuid())
   usuarioId   String
@@ -311,4 +336,43 @@ model CodigoVerificacao {
   @@index([usuarioId])
   @@index([tipo])
   @@index([expiracao])
+}
+
+model NotificacaoEnviada {
+  id            String    @id @default(uuid())
+  assinaturaId  String
+  tipo          String
+  referenciaId  String?
+  enviadaEm     DateTime  @default(now())
+  assinatura    Assinatura @relation(fields: [assinaturaId], references: [id], onDelete: Cascade)
+
+  @@index([assinaturaId])
+  @@index([tipo])
+  @@index([referenciaId])
+  @@index([enviadaEm])
+  @@unique([assinaturaId, tipo, referenciaId])
+}
+
+model FilaNotificacao {
+  id                 String    @id @default(uuid())
+  assinaturaId       String
+  tipo               String
+  referenciaId       String
+  dados              Json
+  status             String    @default("PENDENTE")
+  tentativas         Int       @default(0)
+  maxTentativas      Int       @default(5)
+  tentarNovamenteEm  DateTime  @default(now())
+  processandoEm      DateTime?
+  enviadaEm          DateTime?
+  ultimoErro         String?
+  criadoEm           DateTime  @default(now())
+  atualizadoEm       DateTime  @updatedAt
+
+  assinatura Assinatura @relation(fields: [assinaturaId], references: [id], onDelete: Cascade)
+
+  @@unique([assinaturaId, tipo, referenciaId])
+  @@index([status, tentarNovamenteEm])
+  @@index([processandoEm])
+  @@index([criadoEm])
 }

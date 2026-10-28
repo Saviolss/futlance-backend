@@ -1,7 +1,6 @@
 import { criarCheckoutStripe } from "./pagamento.service.js"
-import { PrismaClient } from "@prisma/client"
 
-const prisma = new PrismaClient()
+import { prisma } from "../../lib/prisma.js"
 
 export async function criarCheckoutStripeController(req, res) {
   try {
