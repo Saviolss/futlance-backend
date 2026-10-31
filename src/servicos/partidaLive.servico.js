@@ -1,8 +1,7 @@
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
 import { buscarAoVivoApi } from "./apiFutebol.servico.js"
-import { PrismaClient } from "@prisma/client"
 
-const prisma = new PrismaClient()
+import { prisma } from "../lib/prisma.js"
 
 /* =========================================================
    STATUS FINALIZADOS
@@ -193,26 +192,6 @@ export async function atualizarPartidasAoVivo() {
         .map(normalizarPartida)
 
         .filter(Boolean)
-
-    /*
-     * Se a API não retornou nenhuma partida ao vivo,
-     * NÃO vamos apagar tudo.
-     *
-     * Isso é importante porque o job individual ainda
-     * precisa consultar as partidas que estão no banco.
-     */
-
-    if (
-      partidasNormalizadas.length === 0
-    ) {
-
-      console.log(
-        "⚠️ API não retornou partidas ao vivo. Banco não será limpo."
-      )
-
-      return
-
-    }
 
     await prisma.$transaction(
       async tx => {

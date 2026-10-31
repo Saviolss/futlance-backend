@@ -1,5 +1,4 @@
 export const CAMPEONATOS = {
   BRASILEIRAO: 10,
-  COPABRASIL: 2,
   CHAMPIONS: 20
 }

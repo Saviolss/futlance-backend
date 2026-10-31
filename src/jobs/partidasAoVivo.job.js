@@ -1,476 +1,145 @@
+
 import { emitirEvento } from "../websocket/websocket.js"
-
+import { CAMPEONATOS } from "../constantes/campeonatos.js"
+import { buscarPartidaApi } from "../servicos/apiFutebol.servico.js"
+import { enviarResultadoPartida } from "../assistenteTorcedor/notificacao/resultado.notificacao.service.js"
+import { atualizarTabelaCampeonato } from "../servicos/tabela.servico.js"
 import {
-  buscarPartidaApi
-} from "../servicos/apiFutebol.servico.js"
-
-import {
-  CAMPEONATOS
-} from "../constantes/campeonatos.js"
-
-import {
-  atualizarTabelaCampeonato
-} from "../servicos/tabela.servico.js"
-
-import {
-  salvarPartidaFinalizada
+  salvarPartidaFinalizada,
+  atualizarFinalizadasCampeonato
 } from "../servicos/partidaFinalizada.servico.js"
-
 import {
   atualizarPartidasAoVivo,
   buscarPartidasAoVivoCampeonato,
   atualizarPartidaAoVivo,
   removerPartidaAoVivoBanco
 } from "../servicos/partidaLive.servico.js"
+import { getCache, setCache, deleteCache } from "../cache/cacheMemoria.js"
+import { CACHE_TTL } from "../constantes/cacheTTL.js"
+import { detectarEventosPartida } from "./detectarEventosPartida.js"
 
-import {
-  getCache,
-  setCache,
-  deleteCache
-} from "../cache/cacheMemoria.js"
+const STATUS_VALIDO = [
+  "andamento",
+  "intervalo",
+  "disputa_penalti",
+  "disputa_penaltis",
+  "finalizado"
+]
 
-import {
-  CACHE_TTL
-} from "../constantes/cacheTTL.js"
-
-import {
-  detectarEventosPartida
-} from "./detectarEventosPartida.js"
-
-/* =========================================================
-   STATUS FINALIZADO
-========================================================= */
-
-function statusEhFinalizado(status) {
-
-  const valor =
-    String(status || "")
-      .trim()
-      .toLowerCase()
-
-  return [
-    "finalizado",
-    "encerrado",
-    "concluido",
-    "finished",
-    "complete"
-  ].includes(valor)
-
-}
-
-/* =========================================================
-   INICIAR
-========================================================= */
+let verificacaoEmAndamento = false
 
 export async function iniciarJobPartidasAoVivo() {
-
-  console.log(
-    "⚽ Job partidas ao vivo inicializado"
-  )
-
+  console.log("⚽ Job partidas ao vivo inicializado")
   await verificarPartidasAoVivo()
-
 }
 
-/* =========================================================
-   PARAR
-========================================================= */
-
-export function pararJobPartidasAoVivo() {
-
-  // Não faz nada.
-
-}
-
-/* =========================================================
-   VERIFICAR PARTIDAS
-========================================================= */
+export function pararJobPartidasAoVivo() { }
 
 export async function verificarPartidasAoVivo() {
+  if (verificacaoEmAndamento) return
 
-  console.log(
-    "🚀 Entrou em verificarPartidasAoVivo"
-  )
+  verificacaoEmAndamento = true
 
   try {
-
-    /*
-     * Atualiza os jogos que a API ainda considera
-     * ao vivo.
-     *
-     * IMPORTANTE:
-     * Essa função não remove mais partidas
-     * indiscriminadamente.
-     */
-
     await atualizarPartidasAoVivo()
 
-    console.log(
-      "✅ Passou de atualizarPartidasAoVivo"
-    )
+    for (const idCampeonato of Object.values(CAMPEONATOS)) {
+      const partidasAoVivo = await buscarPartidasAoVivoCampeonato(idCampeonato)
 
-    /*
-     * Agora percorremos o que está efetivamente
-     * salvo no banco como ao vivo.
-     */
-
-    for (
-      const idCampeonato
-      of Object.values(CAMPEONATOS)
-    ) {
-
-      console.log(
-        "Campeonato:",
-        idCampeonato
-      )
-
-      const partidasAoVivo =
-        await buscarPartidasAoVivoCampeonato(
-          idCampeonato
-        )
-
-      console.log(
-        "Encontradas:",
-        partidasAoVivo.length
-      )
-
-      if (
-        !Array.isArray(partidasAoVivo) ||
-        partidasAoVivo.length === 0
-      ) {
-
+      if (!Array.isArray(partidasAoVivo) || partidasAoVivo.length === 0) {
         continue
-
       }
 
-      /*
-       * Processa cada partida individualmente.
-       */
+      for (const partida of partidasAoVivo) {
+        const partidaId = partida.partida_id
+        const chave = `partida:${partidaId}`
+        const statusAtual = String(partida.status || "").trim().toLowerCase()
 
-      for (
-        const partida
-        of partidasAoVivo
-      ) {
-
-        const partidaId =
-          partida.partida_id
-
-        const chave =
-          `partida:${partidaId}`
-
-        /*
-         * Histórico anterior.
-         */
-
-        const anterior =
-          getCache(chave)
-
-        console.log(
-          "🔄 Atualizando partida",
-          partidaId
-        )
-
-        /*
-         * Consulta individual.
-         *
-         * É ESSA chamada que vai detectar
-         * quando o jogo virou finalizado.
-         */
-
-        const atual =
-          await buscarPartidaApi(
-            partidaId
-          )
-
-        if (!atual) {
-
-          console.log(
-            `⚠️ API não retornou partida ${partidaId}`
-          )
-
+        if (!STATUS_VALIDO.includes(statusAtual)) {
+          await removerPartidaAoVivoBanco(partidaId)
+          deleteCache(chave)
           continue
-
         }
 
-        console.log(
-          "Resposta API:",
-          atual.partida_id,
-          atual.status
-        )
+        const anterior = getCache(chave)
+        let atual
 
-        /*
-         * Normaliza status para comparação.
-         */
-
-        const statusAtual =
-          String(atual.status || "")
-            .trim()
-            .toLowerCase()
-
-        /*
-         * =================================================
-         * 🏁 PARTIDA FINALIZADA
-         * =================================================
-         *
-         * IMPORTANTE:
-         * fazemos essa verificação ANTES de atualizar
-         * normalmente o jogo ao vivo.
-         */
-
-        if (
-          statusEhFinalizado(statusAtual)
-        ) {
-
-          console.log(
-            `🏁 JOGO FINALIZADO: ${partidaId}`
-          )
-
-          /*
-           * 1. Salva imediatamente em
-           * partidaFinalizada.
-           */
-
-          const partidaSalva =
-            await salvarPartidaFinalizada(
-              atual
-            )
-
-          if (!partidaSalva) {
-
-            console.error(
-              `❌ Não foi possível salvar finalizada ${partidaId}`
-            )
-
-            /*
-             * Não removemos do ao vivo se o salvamento
-             * falhou.
-             */
-
-            continue
-
-          }
-
-          /*
-           * 2. Atualiza tabela.
-           */
-
-          await atualizarTabelaCampeonato(
-            idCampeonato
-          )
-
-          /*
-           * 3. Envia evento para o frontend.
-           */
-
-          emitirEvento({
-
-            tipo: "encerrados",
-
-            campeonato:
-              idCampeonato,
-
-            partidaId:
-              partidaId,
-
-            dados:
-              atual
-
-          })
-
-          console.log(
-            `📡 WebSocket ENCERRADOS enviado: ${partidaId}`
-          )
-
-          /*
-           * 4. Remove do banco de partidas ao vivo.
-           */
-
-          await removerPartidaAoVivoBanco(
-            partidaId
-          )
-
-          /*
-           * 5. Remove cache.
-           */
-
-          deleteCache(
-            chave
-          )
-
-          deleteCache(
-            `ao-vivo:${idCampeonato}`
-          )
-
-          deleteCache(
-            "ao-vivo:todas"
-          )
-
-          console.log(
-            `✅ Partida ${partidaId} movida para finalizadas`
-          )
-
-          /*
-           * Não continua processando como jogo ao vivo.
-           */
-
+        try {
+          atual = await buscarPartidaApi(partidaId)
+        } catch (erro) {
+          console.error(`❌ Erro ao consultar partida ${partidaId}:`, erro.message)
           continue
-
         }
 
-        /*
-         * =================================================
-         * ATUALIZA PARTIDA AO VIVO
-         * =================================================
-         */
+        if (!atual) continue
 
-        await atualizarPartidaAoVivo(
-          atual
-        )
+        await atualizarPartidaAoVivo(atual)
 
-        /*
-         * =================================================
-         * DETECTAR EVENTOS
-         * =================================================
-         */
+        const { gol, golMandante, golVisitante, fimDeJogo } =
+          detectarEventosPartida(atual, anterior)
 
-        const {
+        const statusAtualApi = String(atual?.status || "").trim().toLowerCase()
+        const finalizadoAgora =
+          fimDeJogo ||
+          ["finalizado", "encerrado", "concluido", "finished", "complete"].includes(statusAtualApi)
 
-          gol,
-          golMandante,
-          golVisitante,
-          fimDeJogo
-
-        } =
-          detectarEventosPartida(
-            atual,
-            anterior
-          )
-
-        /*
-         * =================================================
-         * CACHE
-         * =================================================
-         */
-
-        setCache(
-          chave,
-          atual,
-          CACHE_TTL.PARTIDA
-        )
-
-        /*
-         * =================================================
-         * ⚽ GOL MANDANTE
-         * =================================================
-         */
+        setCache(chave, atual, CACHE_TTL.PARTIDA)
 
         if (golMandante) {
-
+          console.log(`⚽ GOL DO MANDANTE: ${partidaId}`)
           emitirEvento({
-
-            tipo:
-              "GOL_MANDANTE",
-
-            campeonato:
-              idCampeonato,
-
-            partidaId:
-              partidaId,
-
+            tipo: "GOL_MANDANTE",
+            campeonato: idCampeonato,
+            partidaId,
             dados: {
-
-              time:
-                atual.time_mandante,
-
-              placar: {
-
-                mandante:
-                  atual.placar_mandante,
-
-                visitante:
-                  atual.placar_visitante
-
-              }
-
+              time: atual.time_mandante,
+              placar: atual.placar
             }
-
           })
-
         }
-
-        /*
-         * =================================================
-         * ⚽ GOL VISITANTE
-         * =================================================
-         */
 
         if (golVisitante) {
+          console.log(`⚽ GOL DO VISITANTE: ${partidaId}`)
+          emitirEvento({
+            tipo: "GOL_VISITANTE",
+            campeonato: idCampeonato,
+            partidaId,
+            dados: {
+              time: atual.time_visitante,
+              placar: atual.placar
+            }
+          })
+        }
+
+        if (finalizadoAgora) {
+          const partidaSalva = await salvarPartidaFinalizada(atual)
+
+          if (partidaSalva) {
+            await enviarResultadoPartida(partidaSalva)
+          }
 
           emitirEvento({
-
-            tipo:
-              "GOL_VISITANTE",
-
-            campeonato:
-              idCampeonato,
-
-            partidaId:
-              partidaId,
-
-            dados: {
-
-              time:
-                atual.time_visitante,
-
-              placar: {
-
-                mandante:
-                  atual.placar_mandante,
-
-                visitante:
-                  atual.placar_visitante
-
-              }
-
-            }
-
+            tipo: "finalizado",
+            campeonato: idCampeonato,
+            partidaId,
+            dados: atual
           })
 
+          await atualizarFinalizadasCampeonato(idCampeonato)
+          await removerPartidaAoVivoBanco(partidaId)
+          deleteCache(chave)
         }
 
-        /*
-         * =================================================
-         * TABELA
-         * =================================================
-         */
-
-        if (gol || fimDeJogo) {
-
-          await atualizarTabelaCampeonato(
-            idCampeonato
-          )
-
-          deleteCache(
-            `ao-vivo:${idCampeonato}`
-          )
-
-          deleteCache(
-            "ao-vivo:todas"
-          )
-
+        if (gol || finalizadoAgora) {
+          await atualizarTabelaCampeonato(idCampeonato)
+          deleteCache(`ao-vivo:${idCampeonato}`)
+          deleteCache("ao-vivo:todas")
         }
-
       }
-
     }
-
   } catch (erro) {
-
-    console.error(
-      "❌ Job partidas ao vivo:",
-      erro.message
-    )
-
+    console.error("❌ Job partidas ao vivo:", erro.message)
+  } finally {
+    verificacaoEmAndamento = false
   }
-
 }

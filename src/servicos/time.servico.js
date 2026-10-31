@@ -34,32 +34,36 @@ function extrairTimesCopa(tabela) {
 
   const times = []
 
-  Object.values(tabela || {}).forEach(fase => {
+  function adicionarTimes(valor) {
 
-    if (!fase || typeof fase !== "object") {
-      return
-    }
+    if (Array.isArray(valor)) {
 
-    Object.values(fase).forEach(grupo => {
+      valor.forEach(item => {
 
-      if (!Array.isArray(grupo)) {
-        return
-      }
+        const time = item?.time || item
 
-      grupo.forEach(item => {
-
-        if (!item?.time) {
+        if (!time?.time_id) {
           return
         }
 
         times.push({
-          time_id: item.time.time_id,
-          nome: item.time.nome_popular,
-          escudo: item.time.escudo
+          time_id: time.time_id,
+          nome: time.nome_popular || time.nome,
+          escudo: time.escudo
         })
+
       })
-    })
-  })
+
+      return
+    }
+
+    if (valor && typeof valor === "object") {
+      Object.values(valor).forEach(adicionarTimes)
+    }
+
+  }
+
+  adicionarTimes(tabela)
 
   return times
 }
@@ -68,9 +72,14 @@ function extrairTimesCopa(tabela) {
    LISTA DE TIMES DA COPA
 ====================================================== */
 
-export async function buscarTimesCopa() {
+export async function buscarTimesCampeonatos(
+  campeonatos = [
+    CAMPEONATOS.BRASILEIRAO,
+    CAMPEONATOS.CHAMPIONS
+  ]
+) {
 
-  const chave = "copa:times"
+  const chave = "campeonatos:times"
 
   const cache = getCache(chave)
 
@@ -78,11 +87,14 @@ export async function buscarTimesCopa() {
     return cache
   }
 
-  const tabela = await buscarTabelaApi(
-    CAMPEONATOS.CHAMPIONS
+  const resultados = await Promise.allSettled(
+    [...new Set(campeonatos)]
+      .map(idCampeonato => buscarTabelaApi(idCampeonato))
   )
 
-  const times = extrairTimesCopa(tabela)
+  const times = resultados
+    .filter(resultado => resultado.status === "fulfilled")
+    .flatMap(resultado => extrairTimesCopa(resultado.value))
 
   const unicos = [
     ...new Map(
@@ -104,6 +116,10 @@ export async function buscarTimesCopa() {
   return resultado
 }
 
+
+export async function buscarTimesCopa() {
+  return buscarTimesCampeonatos()
+}
 /* ======================================================
    PRÓXIMAS PARTIDAS
 ====================================================== */
@@ -172,7 +188,7 @@ export async function buscarTimePorSlug(slug) {
     return cache
   }
 
-  const times = await buscarTimesCopa()
+  const times = await buscarTimesCampeonatos()
 
   const encontrado = times.find(
     t => t.slug === slug

@@ -22,22 +22,18 @@ async function executarJobAgenda() {
     console.log("📅 Atualizando agenda...")
 
     await Promise.all([
-
       atualizarAgendaCampeonato(
         CAMPEONATOS.BRASILEIRAO,
         "Brasileirão"
       ),
-
       atualizarAgendaCampeonato(
         CAMPEONATOS.COPABRASIL,
         "Copa do Brasil"
       ),
-
       atualizarAgendaCampeonato(
         CAMPEONATOS.CHAMPIONS,
         "Champions League"
       )
-
     ])
 
     console.log("✅ Agenda atualizada com sucesso.")

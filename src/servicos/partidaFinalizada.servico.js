@@ -1,131 +1,427 @@
+
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
-import { buscarRodadasApi } from "./apiFutebol.servico.js"
-import { PrismaClient } from "@prisma/client"
 
-const prisma = new PrismaClient()
-const LIMITE_HORAS = 48
+import { prisma } from "../lib/prisma.js"
 
-function extrairPartidasDaResposta(resposta) {
-  if (!resposta) return []
+/* =========================================================
+   🔹 STATUS FINALIZADO
+========================================================= */
 
-  if (Array.isArray(resposta)) {
-    return resposta.flatMap(extrairPartidasDaResposta)
-  }
+export function statusEhFinalizado(status) {
 
-  if (Array.isArray(resposta.partidas)) {
-    return resposta.partidas.flatMap(extrairPartidasDaResposta)
-  }
+  const valor =
+    String(status || "")
+      .trim()
+      .toLowerCase()
 
-  if (Array.isArray(resposta.rodadas)) {
-    return resposta.rodadas.flatMap(extrairPartidasDaResposta)
-  }
-
-  if (typeof resposta === "object") {
-    if (resposta.partida_id && resposta.time_mandante && resposta.time_visitante) {
-      return [resposta]
-    }
-
-    return Object.values(resposta).flatMap(extrairPartidasDaResposta)
-  }
-
-  return []
-}
-
-function partidaEhFinalizada(p) {
-  const status = String(p?.status || "").trim().toLowerCase()
-  const statusFinalizado = [
+  return [
     "finalizado",
     "encerrado",
     "concluido",
     "finished",
     "complete"
-  ].includes(status)
+  ].includes(valor)
 
-  const temPlacar =
-    p?.placar_mandante != null && p?.placar_visitante != null
-
-  if (!statusFinalizado && !temPlacar) return false
-
-  if (!p?.data_realizacao_iso && !p?.data_realizacao) {
-    return true
-  }
-
-  const data = new Date(p.data_realizacao_iso || p.data_realizacao).getTime()
-  if (Number.isNaN(data)) return true
-
-  const agora = Date.now()
-  const limite = LIMITE_HORAS * 60 * 60 * 1000
-
-  return data >= agora - limite
 }
 
 /* =========================================================
-   🔹 BUSCA POR CAMPEONATO (SEGURA)
+   🔹 NORMALIZA PARTIDA FINALIZADA
 ========================================================= */
-async function buscarFinalizadasCampeonato(idCampeonato) {
 
-  if (!idCampeonato) {
+function normalizarPartidaFinalizada(p) {
 
-    return []
+  if (!p?.partida_id) {
+    return null
+  }
+
+  return {
+
+    partida_id:
+      p.partida_id,
+
+    status:
+      p.status || "finalizado",
+
+    campeonato: {
+
+      campeonato_id:
+        p.campeonato?.campeonato_id ??
+        p.campeonato_id ??
+        null,
+
+      nome:
+        p.campeonato?.nome ??
+        p.campeonato_nome ??
+        null
+
+    },
+
+    mandante: {
+
+      nome:
+        p.time_mandante?.nome_popular ??
+        p.mandante?.nome ??
+        p.mandante_nome ??
+        null,
+
+      escudo:
+        p.time_mandante?.escudo ??
+        p.mandante?.escudo ??
+        p.mandante_escudo ??
+        null
+
+    },
+
+    visitante: {
+
+      nome:
+        p.time_visitante?.nome_popular ??
+        p.visitante?.nome ??
+        p.visitante_nome ??
+        null,
+
+      escudo:
+        p.time_visitante?.escudo ??
+        p.visitante?.escudo ??
+        p.visitante_escudo ??
+        null
+
+    },
+
+    placar_mandante:
+      Number(p.placar_mandante ?? 0),
+
+    placar_visitante:
+      Number(p.placar_visitante ?? 0),
+
+    data:
+      p.data_realizacao ??
+      p.data ??
+      null,
+
+    hora:
+      p.hora_realizacao ??
+      p.hora ??
+      null,
+
+    data_iso:
+      p.data_realizacao_iso ??
+      p.data_iso ??
+      null
+
+  }
+
+}
+
+/* =========================================================
+   🔹 SALVAR PARTIDA FINALIZADA
+========================================================= */
+
+export async function salvarPartidaFinalizada(partida) {
+
+  if (!partida?.partida_id) {
+
+    console.error(
+      "❌ Não foi possível salvar partida finalizada: partida_id ausente"
+    )
+
+    return null
 
   }
 
   try {
 
-    const partidas = await prisma.partidaFinalizada.findMany({
+    const normalizada =
+      normalizarPartidaFinalizada(partida)
 
-      where: {
+    if (!normalizada) {
 
-        campeonato_id: idCampeonato
+      console.error(
+        "❌ Não foi possível normalizar partida finalizada"
+      )
 
-      },
+      return null
 
-      orderBy: [ 
+    }
 
-       { data_iso: "desc" },
+    if (!normalizada.campeonato.campeonato_id) {
 
-      { partida_id: "desc" }
+      console.error(
+        `❌ Partida ${normalizada.partida_id} sem campeonato_id`
+      )
 
-      ]
-    })
+      return null
+
+    }
+
+    if (!statusEhFinalizado(normalizada.status)) {
+
+      console.log(
+        `⚠️ Partida ${normalizada.partida_id} ainda não está finalizada.Status: ${normalizada.status} `
+      )
+
+      return null
+
+    }
+
+    const dataIso =
+      normalizada.data_iso
+        ? new Date(normalizada.data_iso)
+        : null
+
+    const partidaSalva =
+      await prisma.partidaFinalizada.upsert({
+
+        where: {
+
+          partida_id:
+            normalizada.partida_id
+
+        },
+
+        update: {
+
+          campeonato_id:
+            normalizada.campeonato.campeonato_id,
+
+          campeonato_nome:
+            normalizada.campeonato.nome,
+
+          status:
+            normalizada.status,
+
+          mandante_nome:
+            normalizada.mandante.nome,
+
+          mandante_escudo:
+            normalizada.mandante.escudo,
+
+          visitante_nome:
+            normalizada.visitante.nome,
+
+          visitante_escudo:
+            normalizada.visitante.escudo,
+
+          placar_mandante:
+            normalizada.placar_mandante,
+
+          placar_visitante:
+            normalizada.placar_visitante,
+
+          data:
+            normalizada.data,
+
+          hora:
+            normalizada.hora,
+
+          data_iso:
+            dataIso
+
+        },
+
+        create: {
+
+          partida_id:
+            normalizada.partida_id,
+
+          campeonato_id:
+            normalizada.campeonato.campeonato_id,
+
+          campeonato_nome:
+            normalizada.campeonato.nome,
+
+          status:
+            normalizada.status,
+
+          mandante_nome:
+            normalizada.mandante.nome,
+
+          mandante_escudo:
+            normalizada.mandante.escudo,
+
+          visitante_nome:
+            normalizada.visitante.nome,
+
+          visitante_escudo:
+            normalizada.visitante.escudo,
+
+          placar_mandante:
+            normalizada.placar_mandante,
+
+          placar_visitante:
+            normalizada.placar_visitante,
+
+          data:
+            normalizada.data,
+
+          hora:
+            normalizada.hora,
+
+          data_iso:
+            dataIso
+
+        }
+
+      })
+
+    console.log(
+      `🏁 Partida ${normalizada.partida_id} salva em partidaFinalizada`
+    )
+
+    console.log(
+      `⚽ ${normalizada.mandante.nome} ${normalizada.placar_mandante} x ${normalizada.placar_visitante} ${normalizada.visitante.nome} `
+    )
+
+    return partidaSalva
+
+  } catch (erro) {
+
+    console.error(
+      `❌ Erro ao salvar partida finalizada ${partida.partida_id}: `,
+      erro.message
+    )
+
+    return null
+
+  }
+
+}
+
+/* =========================================================
+   🔹 ATUALIZAR FINALIZADAS POR CAMPEONATO
+
+   IMPORTANTE:
+   A partida é salva no momento em que o
+   partidasAoVivo.job detectar que ela terminou.
+
+   Esta função fica mantida para compatibilidade
+   com outros jobs/arquivos que ainda possam chamar.
+========================================================= */
+
+export async function atualizarFinalizadasCampeonato(
+  idCampeonato
+) {
+
+  if (!idCampeonato) {
+    return []
+  }
+
+  try {
+
+    const partidas =
+      await buscarFinalizadasCampeonato(
+        idCampeonato
+      )
+
+    console.log(
+      `🏁 Finalizadas encontradas no banco campeonato ${idCampeonato}: ${partidas.length} `
+    )
+
+    return partidas
+
+  } catch (erro) {
+
+    console.error(
+      `❌ Erro ao atualizar finalizadas campeonato ${idCampeonato}: `,
+      erro.message
+    )
+
+    return []
+
+  }
+
+}
+
+/* =========================================================
+   🔹 BUSCAR FINALIZADAS POR CAMPEONATO
+========================================================= */
+
+export async function buscarFinalizadasCampeonato(
+  idCampeonato
+) {
+
+  if (!idCampeonato) {
+    return []
+  }
+
+  try {
+
+    const partidas =
+      await prisma.partidaFinalizada.findMany({
+
+        where: {
+
+          campeonato_id:
+            idCampeonato
+
+        },
+
+        orderBy: [
+
+          {
+            data_iso: "desc"
+          },
+
+          {
+            partida_id: "desc"
+          }
+
+        ]
+
+      })
 
     return partidas.map(partida => ({
 
-      partida_id: partida.partida_id,
+      partida_id:
+        partida.partida_id,
 
-      status: partida.status,
+      status:
+        partida.status,
 
       campeonato: {
 
-        nome: partida.campeonato_nome
+        campeonato_id:
+          partida.campeonato_id,
+
+        nome:
+          partida.campeonato_nome
 
       },
 
       mandante: {
 
-        nome: partida.mandante_nome,
+        nome:
+          partida.mandante_nome,
 
-        escudo: partida.mandante_escudo
+        escudo:
+          partida.mandante_escudo
 
       },
 
       visitante: {
 
-        nome: partida.visitante_nome,
+        nome:
+          partida.visitante_nome,
 
-        escudo: partida.visitante_escudo
+        escudo:
+          partida.visitante_escudo
 
       },
 
-      placar_mandante: partida.placar_mandante,
+      placar_mandante:
+        partida.placar_mandante,
 
-      placar_visitante: partida.placar_visitante,
+      placar_visitante:
+        partida.placar_visitante,
 
-      data: partida.data,
+      data:
+        partida.data,
 
-      hora: partida.hora,
+      hora:
+        partida.hora,
 
-      data_iso: partida.data_iso
+      data_iso:
+        partida.data_iso
 
     }))
 
@@ -133,7 +429,7 @@ async function buscarFinalizadasCampeonato(idCampeonato) {
 
     console.error(
 
-      `❌ Erro ao buscar partidas finalizadas ${idCampeonato}:`,
+      `❌ Erro ao buscar partidas finalizadas ${idCampeonato}: `,
 
       erro.message
 
@@ -145,304 +441,87 @@ async function buscarFinalizadasCampeonato(idCampeonato) {
 
 }
 
-export async function atualizarFinalizadasCampeonato(
-  idCampeonato
-) {
-
-  try {
-
-    const resposta =
-      await buscarRodadasApi(idCampeonato)
-
-    const partidas = extrairPartidasDaResposta(resposta)
-      .filter(partidaEhFinalizada)
-      .map(normalizarPartidaFinalizada)
-
-    for (const partida of partidas) {
-
-      await prisma.partidaFinalizada.upsert({
-
-        where: {
-
-          partida_id: partida.partida_id
-
-        },
-
-        update: {
-
-          campeonato_id: idCampeonato,
-
-          campeonato_nome: partida.campeonato.nome,
-
-          status: partida.status,
-
-          mandante_nome: partida.mandante.nome,
-
-          mandante_escudo: partida.mandante.escudo,
-
-          visitante_nome: partida.visitante.nome,
-
-          visitante_escudo: partida.visitante.escudo,
-
-          placar_mandante: partida.placar_mandante,
-
-          placar_visitante: partida.placar_visitante,
-
-          data: partida.data,
-
-          hora: partida.hora,
-
-          data_iso: partida.data_iso
-            ? new Date(partida.data_iso)
-            : null
-
-        },
-
-        create: {
-
-          partida_id: partida.partida_id,
-
-          campeonato_id: idCampeonato,
-
-          campeonato_nome: partida.campeonato.nome,
-
-          status: partida.status,
-
-          mandante_nome: partida.mandante.nome,
-
-          mandante_escudo: partida.mandante.escudo,
-
-          visitante_nome: partida.visitante.nome,
-
-          visitante_escudo: partida.visitante.escudo,
-
-          placar_mandante: partida.placar_mandante,
-
-          placar_visitante: partida.placar_visitante,
-
-          data: partida.data,
-
-          hora: partida.hora,
-
-          data_iso: partida.data_iso
-            ? new Date(partida.data_iso)
-            : null
-
-        }
-
-      })
-
-    }
-
-    const ids = partidas.map(
-      partida => partida.partida_id
-    )
-
-    await prisma.partidaFinalizada.deleteMany({
-
-      where: {
-
-        campeonato_id: idCampeonato,
-
-        partida_id: {
-
-          notIn: ids
-
-        }
-
-      }
-
-    })
-
-    console.log(
-      `✅ Partidas finalizadas ${idCampeonato} atualizadas`
-    )
-
-  } catch (erro) {
-
-    console.error(
-
-      `❌ Erro ao atualizar partidas finalizadas ${idCampeonato}:`,
-
-      erro.message
-
-    )
-
-  }
-
-}
-
 /* =========================================================
-   🔹 NORMALIZA PARTIDA
+   🔹 TODAS FINALIZADAS
 ========================================================= */
-function normalizarPartidaFinalizada(p) {
-  return {
-    partida_id: p.partida_id,
-    status: p.status || "finalizado",
 
-    campeonato: {
-      nome: p.campeonato?.nome
-    },
-
-    mandante: {
-      nome: p.time_mandante?.nome_popular,
-      escudo: p.time_mandante?.escudo
-    },
-
-    visitante: {
-      nome: p.time_visitante?.nome_popular,
-      escudo: p.time_visitante?.escudo
-    },
-
-    placar_mandante: p.placar_mandante,
-    placar_visitante: p.placar_visitante,
-
-    data: p.data_realizacao,
-    hora: p.hora_realizacao,
-    data_iso: p.data_realizacao_iso || p.data_realizacao || null
-  }
-}
-
-export async function salvarPartidaFinalizada(partidaApi) {
-
-  if (!partidaApi) {
-
-    return null
-
-  }
-
-  try {
-
-    const partida = normalizarPartidaFinalizada(partidaApi)
-
-    if (!partida || !partida.partida_id) {
-
-      return null
-
-    }
-
-    const partidaSalva = await prisma.partidaFinalizada.upsert({
-
-      where: {
-
-        partida_id: partida.partida_id
-
-      },
-
-      update: {
-
-        campeonato_id: partidaApi.campeonato?.campeonato_id ?? null,
-
-        campeonato_nome: partida.campeonato.nome,
-
-        status: partida.status,
-
-        mandante_nome: partida.mandante.nome,
-
-        mandante_escudo: partida.mandante.escudo,
-
-        visitante_nome: partida.visitante.nome,
-
-        visitante_escudo: partida.visitante.escudo,
-
-        placar_mandante: partida.placar_mandante,
-
-        placar_visitante: partida.placar_visitante,
-
-        data: partida.data,
-
-        hora: partida.hora,
-
-        data_iso: partida.data_iso
-          ? new Date(partida.data_iso)
-          : null
-
-      },
-
-      create: {
-
-        partida_id: partida.partida_id,
-
-        campeonato_id: partidaApi.campeonato?.campeonato_id ?? null,
-
-        campeonato_nome: partida.campeonato.nome,
-
-        status: partida.status,
-
-        mandante_nome: partida.mandante.nome,
-
-        mandante_escudo: partida.mandante.escudo,
-
-        visitante_nome: partida.visitante.nome,
-
-        visitante_escudo: partida.visitante.escudo,
-
-        placar_mandante: partida.placar_mandante,
-
-        placar_visitante: partida.placar_visitante,
-
-        data: partida.data,
-
-        hora: partida.hora,
-
-        data_iso: partida.data_iso
-          ? new Date(partida.data_iso)
-          : null
-
-      }
-
-    })
-
-    return partidaSalva
-
-  } catch (erro) {
-
-    console.error(
-
-      `❌ Erro ao salvar partida finalizada ${partidaApi?.partida_id}:`,
-
-      erro.message
-
-    )
-
-    return null
-
-  }
-
-}
-
-/* =========================================================
-   🔹 TODAS FINALIZADAS (CORRIGIDO)
-========================================================= */
 export async function buscarTodasFinalizadas() {
-  const [
-    brasileirao,
-    copaBrasil,
-    Champions
-  ] = await Promise.allSettled([
-    buscarBrasileiraoFinalizadas(),
-    buscarCopaBrasilFinalizadas(),
-    buscarChampionsFinalizadas()
-  ])
 
-  return [
-    ...(brasileirao.status === "fulfilled" ? brasileirao.value : []),
-    ...(copaBrasil.status === "fulfilled" ? copaBrasil.value : []),
-    ...(Champions.status === "fulfilled" ? Champions.value : [])
-  ]
+  try {
+
+    const [
+
+      brasileirao,
+
+      copaBrasil,
+
+      champions
+
+    ] = await Promise.all([
+
+      buscarBrasileiraoFinalizadas(),
+
+      buscarCopaBrasilFinalizadas(),
+
+      buscarChampionsFinalizadas()
+
+    ])
+
+    return [
+
+      ...brasileirao,
+
+      ...copaBrasil,
+
+      ...champions
+
+    ]
+
+  } catch (erro) {
+
+    console.error(
+      "❌ Erro ao buscar todas as partidas finalizadas:",
+      erro.message
+    )
+
+    return []
+
+  }
+
 }
 
 /* =========================================================
-   🔹 EXPORTS POR CAMPEONATO
+   🔹 FINALIZADAS — BRASILEIRÃO
 ========================================================= */
+
 export function buscarBrasileiraoFinalizadas() {
-  return buscarFinalizadasCampeonato(CAMPEONATOS.BRASILEIRAO)
+
+  return buscarFinalizadasCampeonato(
+    CAMPEONATOS.BRASILEIRAO
+  )
+
 }
 
-export function buscarChampionsFinalizadas() {
-  return buscarFinalizadasCampeonato(CAMPEONATOS.CHAMPIONS)
-}
+/* =========================================================
+   🔹 FINALIZADAS — COPA DO BRASIL
+========================================================= */
 
 export function buscarCopaBrasilFinalizadas() {
-  return buscarFinalizadasCampeonato(CAMPEONATOS.COPABRASIL)
+
+  return buscarFinalizadasCampeonato(
+    CAMPEONATOS.COPABRASIL
+  )
+
+}
+
+/* =========================================================
+   🔹 FINALIZADAS — CHAMPIONS
+========================================================= */
+
+export function buscarChampionsFinalizadas() {
+
+  return buscarFinalizadasCampeonato(
+    CAMPEONATOS.CHAMPIONS
+  )
+
 }
