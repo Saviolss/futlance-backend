@@ -4,21 +4,16 @@ import {
   buscarTodasAoVivo
 } from "../servicos/partidaLive.servico.js"
 
-import {
-  buscarTodasFinalizadas
-} from "../servicos/partidaFinalizada.servico.js"
 
 import {
   verificarPartidasAoVivo
 } from "./partidasAoVivo.job.js"
+
 /* ======================================================
    CACHE LOCAL
 ====================================================== */
 
 let ultimoHashAoVivo = ""
-let ultimoHashFinalizadas = ""
-let ultimaAtualizacaoFinalizadas = 0
-const INTERVALO_FINALIZADAS = 15 * 60 * 1000
 
 /* ======================================================
    GERA HASH
@@ -50,7 +45,9 @@ function gerarHash(partidas = []) {
 
       penalti_visitante:
         p.penalti?.visitante || 0
+
     }))
+
   )
 }
 
@@ -70,18 +67,22 @@ function temJogoEmPenaltis(partidas = []) {
       status.includes("pênalti") ||
 
       status.includes("penalti")
+
     )
+
   })
 }
 
+
 /* ======================================================
-   ⚙️ JOB PRINCIPAL
+   JOB PRINCIPAL
 ====================================================== */
 
 export function iniciarJobPartidas() {
 
-  console.log("⚙️ Job de partidas inicializado");
-
+  console.log(
+    "⚙️ Job de partidas inicializado"
+  )
 
   async function atualizar() {
 
@@ -90,13 +91,13 @@ export function iniciarJobPartidas() {
     try {
 
       /* ============================
-         🔄 ATUALIZA API
+         🔄 ATUALIZA AO VIVO
       ============================ */
 
       await verificarPartidasAoVivo()
 
       /* ============================
-         🔴 AO VIVO
+         🔴 BUSCA AO VIVO
       ============================ */
 
       aoVivo =
@@ -104,14 +105,21 @@ export function iniciarJobPartidas() {
 
       const novoHashAoVivo =
         gerarHash(aoVivo)
-      console.log("Hash antigo:", ultimoHashAoVivo);
-      console.log("Hash novo :", novoHashAoVivo);
-      // 🔥 envia websocket apenas se mudou
+
+
+      /* ============================
+         📡 WEBSOCKET AO VIVO
+      ============================ */
+
       if (
         novoHashAoVivo !==
         ultimoHashAoVivo
       ) {
-        console.log("📡 Enviando websocket");
+
+        console.log(
+          "📡 Enviando websocket ao-vivo"
+        )
+
         ultimoHashAoVivo =
           novoHashAoVivo
 
@@ -120,58 +128,20 @@ export function iniciarJobPartidas() {
           tipo: "ao-vivo",
 
           dados: aoVivo
+
         })
 
         console.log(
           "📡 WebSocket AO VIVO enviado"
         )
+
       }
 
       console.log(
         `🔴 Jogos ao vivo: ${aoVivo.length}`
       )
 
-      /* ============================
-         🏁 FINALIZADAS
-      ============================ */
 
-      // 🔥 só verifica finalizadas se havia jogos ao vivo
-      // e pelo menos 15 minutos desde a última checagem
-      const agora = Date.now()
-      if (
-        ultimoHashAoVivo !== "[]" &&
-        agora - ultimaAtualizacaoFinalizadas >= INTERVALO_FINALIZADAS
-      ) {
-
-        ultimaAtualizacaoFinalizadas = agora
-
-        const finalizadas =
-          await buscarTodasFinalizadas()
-
-        const novoHashFinalizadas =
-          gerarHash(finalizadas)
-
-        // 🔥 envia apenas se mudou
-        if (
-          novoHashFinalizadas !==
-          ultimoHashFinalizadas
-        ) {
-
-          ultimoHashFinalizadas =
-            novoHashFinalizadas
-
-          emitirEvento({
-
-            tipo: "encerrados",
-
-            dados: finalizadas
-          })
-
-          console.log(
-            "📡 WebSocket FINALIZADAS enviado"
-          )
-        }
-      }
 
     } catch (e) {
 
@@ -179,6 +149,7 @@ export function iniciarJobPartidas() {
         "❌ Erro job partidas:",
         e.message
       )
+
     }
 
     /* ============================
@@ -189,6 +160,7 @@ export function iniciarJobPartidas() {
       temJogoEmPenaltis(aoVivo)
 
     const proximoTempo =
+
       aoVivo.length === 0
 
         ? 45 * 60 * 1000
@@ -203,13 +175,17 @@ export function iniciarJobPartidas() {
        LOG
     ============================ */
 
-    if (aoVivo.length === 0) {
+    if (
+      aoVivo.length === 0
+    ) {
 
       console.log(
         "😴 Nenhum jogo ao vivo — modo economia"
       )
 
-    } else if (penaltis) {
+    } else if (
+      penaltis
+    ) {
 
       console.log(
         "⚡ Jogos em disputa de pênaltis — atualização 1 min"
@@ -231,7 +207,9 @@ export function iniciarJobPartidas() {
       atualizar,
       proximoTempo
     )
+
   }
 
   atualizar()
+
 }

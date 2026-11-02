@@ -1,4 +1,4 @@
-import { buscarTimesCopa, buscarTimePorSlug } from "../servicos/time.servico.js"
+import { buscarTimesCampeonatos } from "../servicos/time.servico.js"
 
 import { prisma } from "../lib/prisma.js"
 
@@ -21,7 +21,7 @@ export function iniciarJobTimes() {
       ===================================== */
 
       const times =
-        await buscarTimesCopa()
+        await buscarTimesCampeonatos()
 
       console.log(
         `⚽ Times encontrados: ${times.length}`
@@ -35,133 +35,47 @@ export function iniciarJobTimes() {
 
         try {
 
-          const time =
-            await buscarTimePorSlug(
-              item.slug
-            )
-
-          /* ==========================
-             TIME
-          ========================== */
-
           await prisma.time.upsert({
 
             where: {
-              timeId: time.time_id
+              timeId: item.time_id
             },
 
             update: {
-              timeId: time.time_id,
+              timeId: item.time_id,
 
               nome:
-                time.nome,
+                item.nome,
 
               nomePopular:
-                time.nome_popular,
-
-              sigla:
-                time.sigla,
+                item.nome,
 
               escudo:
-                time.escudo,
+                item.escudo,
 
               slug:
-                time.slug
+                item.slug
             },
 
             create: {
 
               timeId:
-                time.time_id,
+                item.time_id,
 
               nome:
-                time.nome,
+                item.nome,
 
               nomePopular:
-                time.nome_popular,
-
-              sigla:
-                time.sigla,
+                item.nome,
 
               escudo:
-                time.escudo,
+                item.escudo,
 
               slug:
-                time.slug
+                item.slug
             }
           })
 
-          /* ==========================
-             PARTIDAS
-          ========================== */
-
-          for (const partida of time.proximasPartidas) {
-
-            await prisma.partida.upsert({
-
-              where: {
-                partidaId_timeId: {
-                  partidaId: partida.partida_id,
-                  timeId: time.time_id
-                }
-              },
-
-              update: {
-
-                timeId:
-                  time.time_id,
-
-                campeonato:
-                  partida.campeonato,
-
-                status:
-                  partida.status,
-
-                data:
-                  partida.data,
-
-                hora:
-                  partida.hora,
-
-                mandante:
-                  partida.mandante.nome,
-
-                visitante:
-                  partida.visitante.nome
-              },
-
-              create: {
-
-                partidaId:
-                  partida.partida_id,
-
-                timeId:
-                  time.time_id,
-
-                campeonato:
-                  partida.campeonato,
-
-                status:
-                  partida.status,
-
-                data:
-                  partida.data,
-
-                hora:
-                  partida.hora,
-
-                mandante:
-                  partida.mandante.nome,
-
-                visitante:
-                  partida.visitante.nome
-              }
-            })
-          }
-
-          console.log(
-            `✅ ${time.nome_popular} salvo`
-          )
 
           await new Promise(resolve =>
             setTimeout(resolve, 500)

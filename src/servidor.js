@@ -1,6 +1,8 @@
 import dotenv from "dotenv"
 import app from "./app.js"
 
+dotenv.config()
+
 import { iniciarJobs } from "./jobs/atualizarCache.job.js"
 import { iniciarJobAgenda } from "./jobs/agenda.job.js"
 import { iniciarJobPartidas } from "./jobs/atualizarPartida.job.js"
@@ -8,6 +10,7 @@ import { gerenciarAoVivo } from "./jobs/gerenciadorAoVivo.job.js"
 import { iniciarJobNoticias } from "./noticias/noticia.job.js"
 import { iniciarWebSocket } from "./websocket/websocket.js"
 import { iniciarJobTimes } from "./jobs/time.job.js"
+import { iniciarJobFilaNotificacoes } from "./jobs/notificacaoFila.job.js"
 import cron from "node-cron"
 import http from "http"
 
@@ -21,8 +24,7 @@ iniciarJobAgenda()
 iniciarJobPartidas()
 iniciarJobNoticias() 
 iniciarJobTimes() 
-
-dotenv.config()
+iniciarJobFilaNotificacoes()
 
 const PORTA = process.env.PORT || 3333
 

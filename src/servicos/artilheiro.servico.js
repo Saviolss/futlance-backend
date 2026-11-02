@@ -1,8 +1,7 @@
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
 import { artilheirosCampeonatoApi } from "./apiFutebol.servico.js"
-import { PrismaClient } from "@prisma/client"
 
-const prisma = new PrismaClient()
+import { prisma } from "../lib/prisma.js"
 
 /* =========================================================
    FUNÇÃO BASE

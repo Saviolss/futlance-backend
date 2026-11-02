@@ -2,7 +2,7 @@ import axios from "axios"
 
 const apiFutebol = axios.create({
   baseURL: "https://api.api-futebol.com.br/v1",
-  timeout: 10000,
+  timeout: 50000,
 })
 
 async function requestApiFutebol(endpoint, mensagemErro) {
@@ -43,6 +43,7 @@ export function buscarAgendaApi(idCampeonato) {
     "Erro ao buscar agenda do campeonato"
   )
 }
+
 
 export function buscarRodadasApi(idCampeonato) {
   return requestApiFutebol(

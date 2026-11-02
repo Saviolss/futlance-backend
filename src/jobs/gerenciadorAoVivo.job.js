@@ -1,5 +1,4 @@
 import { iniciarJobPartidasAoVivo } from "./partidasAoVivo.job.js";
-import { atualizarPartidasAoVivo } from "../servicos/partidaLive.servico.js";
 import { obterPartidasDoDia } from "../utils/agendaDoDia.js";
 
 let jobAtivo = false;
@@ -9,8 +8,6 @@ export async function gerenciarAoVivo() {
     const partidasHoje = await obterPartidasDoDia();
 
     if (partidasHoje.length > 0) {
-      await atualizarPartidasAoVivo();
-
       if (!jobAtivo) {
         await iniciarJobPartidasAoVivo();
         jobAtivo = true;
