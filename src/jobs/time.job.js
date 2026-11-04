@@ -13,6 +13,7 @@ export function iniciarJobTimes() {
   )
 
   async function atualizar() {
+    let houveErro = false
 
     try {
 
@@ -26,6 +27,13 @@ export function iniciarJobTimes() {
       console.log(
         `⚽ Times encontrados: ${times.length}`
       )
+
+      if (times.length === 0) {
+        houveErro = true
+        console.error(
+          "❌ Nenhum time encontrado; uma nova tentativa será feita em 1 hora."
+        )
+      }
 
       /* =====================================
          TIMES
@@ -82,6 +90,7 @@ export function iniciarJobTimes() {
           )
 
         } catch (erro) {
+          houveErro = true
 
           console.error(
             `❌ Erro time ${item.nome}:`,
@@ -90,11 +99,18 @@ export function iniciarJobTimes() {
         }
       }
 
-      console.log(
-        "🏁 Atualização dos times concluída"
-      )
+      if (houveErro) {
+        console.warn(
+          "⚠️ Atualização dos times concluída com erros."
+        )
+      } else {
+        console.log(
+          "🏁 Atualização dos times concluída"
+        )
+      }
 
     } catch (erro) {
+      houveErro = true
 
       console.error(
         "❌ Erro job times:",
@@ -103,15 +119,18 @@ export function iniciarJobTimes() {
     }
 
     /* =====================================
-       24 HORAS
+       PRÓXIMA ATUALIZAÇÃO
     ===================================== */
 
     const proximaAtualizacao =
-      24 * 60 * 60 * 1000
+      houveErro
+        ? 60 * 60 * 1000
+        : 15 * 24 * 60 * 60 * 1000
 
     console.log(
-      `⏱ Próxima atualização em ${proximaAtualizacao / 3600000
-      } horas`
+      `⏱ Próxima atualização em ${
+        houveErro ? "1 hora" : "15 dias"
+      }`
     )
 
     setTimeout(

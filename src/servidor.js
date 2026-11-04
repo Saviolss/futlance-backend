@@ -19,11 +19,11 @@ gerenciarAoVivo()
 const server = http.createServer(app)
 iniciarWebSocket(server)
 
+iniciarJobTimes()
 iniciarJobs()
 iniciarJobAgenda()
 iniciarJobPartidas()
 iniciarJobNoticias() 
-iniciarJobTimes() 
 iniciarJobFilaNotificacoes()
 
 const PORTA = process.env.PORT || 3333

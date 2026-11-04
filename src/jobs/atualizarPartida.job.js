@@ -169,7 +169,7 @@ export function iniciarJobPartidas() {
 
           ? 60 * 1000
 
-          : 120 * 1000
+          : 180 * 1000
 
     /* ============================
        LOG

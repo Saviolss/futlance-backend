@@ -87,13 +87,34 @@ export async function buscarTimesCampeonatos(
     return cache
   }
 
+  const idsCampeonato = [...new Set(campeonatos)]
   const resultados = await Promise.allSettled(
-    [...new Set(campeonatos)]
-      .map(idCampeonato => buscarTabelaApi(idCampeonato))
+    idsCampeonato.map(idCampeonato => buscarTabelaApi(idCampeonato))
   )
 
-  const times = resultados
-    .filter(resultado => resultado.status === "fulfilled")
+  const resultadosComErro = resultados
+    .map((resultado, indice) => ({
+      resultado,
+      idCampeonato: idsCampeonato[indice]
+    }))
+    .filter(({ resultado }) => resultado.status === "rejected")
+
+  for (const { resultado, idCampeonato } of resultadosComErro) {
+    console.error(
+      `❌ Erro ao buscar times do campeonato ${idCampeonato}:`,
+      resultado.reason?.message || resultado.reason
+    )
+  }
+
+  const resultadosValidos = resultados.filter(
+    resultado => resultado.status === "fulfilled"
+  )
+
+  if (resultadosValidos.length === 0) {
+    throw new Error("Não foi possível buscar os times de nenhum campeonato.")
+  }
+
+  const times = resultadosValidos
     .flatMap(resultado => extrairTimesCopa(resultado.value))
 
   const unicos = [
@@ -107,11 +128,13 @@ export async function buscarTimesCampeonatos(
     slug: gerarSlug(time.nome)
   }))
 
-  setCache(
-    chave,
-    resultado,
-    CACHE_TTL.TABELA
-  )
+  if (resultado.length > 0) {
+    setCache(
+      chave,
+      resultado,
+      CACHE_TTL.TABELA
+    )
+  }
 
   return resultado
 }
