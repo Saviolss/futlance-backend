@@ -187,9 +187,11 @@ export async function consultarRetornoPagamentoController(req, res) {
 
     const session = await stripe.checkout.sessions.retrieve(sessionId)
     const assinaturaId = session.metadata?.assinaturaId
-    if (!assinaturaId) return res.status(404).json({ sucesso: false, codigo: "ASSINATURA_NAO_ENCONTRADA", mensagem: "Não foi possível localizar essa assinatura." })
+    if (!assinaturaId || session.metadata?.usuarioId !== usuarioId) {
+      return res.status(404).json({ sucesso: false, codigo: "ASSINATURA_NAO_ENCONTRADA", mensagem: "Não foi possível localizar essa assinatura." })
+    }
 
-    const assinatura = await prisma.assinatura.findFirst({
+    let assinatura = await prisma.assinatura.findFirst({
       where: { id: assinaturaId, usuarioId },
       select: { id: true, status: true, formaPagamento: true, plano: true, fimEm: true }
     })
@@ -201,6 +203,54 @@ export async function consultarRetornoPagamentoController(req, res) {
         data: { status: "CANCELADA", canceladaEm: new Date() }
       })
       return res.status(200).json({ sucesso: true, estado: "erro", mensagem: "O checkout expirou. Volte ao Futlance para iniciar uma nova tentativa." })
+    }
+
+    const subscriptionId =
+      typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription?.id
+
+    if (
+      assinatura.formaPagamento === "cartao" &&
+      assinatura.status === "PENDENTE" &&
+      session.status === "complete" &&
+      ["paid", "no_payment_required"].includes(session.payment_status) &&
+      subscriptionId
+    ) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+
+      if (
+        subscription.metadata?.assinaturaId === assinatura.id &&
+        subscription.metadata?.usuarioId === usuarioId &&
+        ["active", "trialing"].includes(subscription.status)
+      ) {
+        const inicioEm = subscription.current_period_start
+          ? new Date(subscription.current_period_start * 1000)
+          : new Date()
+        const fimEm = subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000)
+          : null
+
+        await prisma.assinatura.updateMany({
+          where: {
+            id: assinatura.id,
+            usuarioId,
+            formaPagamento: "cartao",
+            status: "PENDENTE"
+          },
+          data: {
+            status: "ATIVA",
+            inicioEm,
+            fimEm,
+            stripeSubscriptionId: subscription.id
+          }
+        })
+
+        assinatura = await prisma.assinatura.findFirst({
+          where: { id: assinaturaId, usuarioId },
+          select: { id: true, status: true, formaPagamento: true, plano: true, fimEm: true }
+        })
+      }
     }
 
     if (assinatura.status === "ATIVA") {
