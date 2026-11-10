@@ -181,13 +181,22 @@ export async function consultarRetornoPagamentoController(req, res) {
   try {
     const usuarioId = req.usuario?.id || req.usuarioId
     const sessionId = req.query.session_id
+    const paymentIntentId = req.query.payment_intent || req.query.payment_intent_id
     if (!usuarioId) return res.status(401).json({ sucesso: false, codigo: "USUARIO_NAO_AUTENTICADO", mensagem: "Faça login para consultar o pagamento." })
-    if (!sessionId || typeof sessionId !== "string" || !sessionId.startsWith("cs_")) return res.status(400).json({ sucesso: false, codigo: "SESSION_INVALIDA", mensagem: "Identificador de pagamento inválido." })
+    const temSessionValida = typeof sessionId === "string" && sessionId.startsWith("cs_")
+    const temPaymentIntentValido = typeof paymentIntentId === "string" && paymentIntentId.startsWith("pi_")
+    if (temSessionValida === temPaymentIntentValido) return res.status(400).json({ sucesso: false, codigo: "PAGAMENTO_INVALIDO", mensagem: "Identificador de pagamento inválido." })
     if (!process.env.STRIPE_KEY) return res.status(500).json({ sucesso: false, codigo: "STRIPE_NAO_CONFIGURADO", mensagem: "O pagamento não pode ser consultado agora." })
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
-    const assinaturaId = session.metadata?.assinaturaId
-    if (!assinaturaId || session.metadata?.usuarioId !== usuarioId) {
+    const session = temSessionValida
+      ? await stripe.checkout.sessions.retrieve(sessionId)
+      : null
+    const paymentIntent = temPaymentIntentValido
+      ? await stripe.paymentIntents.retrieve(paymentIntentId)
+      : null
+    const pagamentoStripe = session || paymentIntent
+    const assinaturaId = pagamentoStripe.metadata?.assinaturaId
+    if (!assinaturaId || pagamentoStripe.metadata?.usuarioId !== usuarioId) {
       return res.status(404).json({ sucesso: false, codigo: "ASSINATURA_NAO_ENCONTRADA", mensagem: "Não foi possível localizar essa assinatura." })
     }
 
@@ -197,7 +206,19 @@ export async function consultarRetornoPagamentoController(req, res) {
     })
     if (!assinatura) return res.status(404).json({ sucesso: false, codigo: "ASSINATURA_NAO_ENCONTRADA", mensagem: "Pagamento não encontrado para este usuário." })
 
-    if (session.status === "expired") {
+    if (
+      paymentIntent &&
+      (
+        assinatura.formaPagamento !== "pix" ||
+        assinatura.plano !== "ANUAL" ||
+        pagamentoStripe.metadata?.formaPagamento !== "pix" ||
+        pagamentoStripe.metadata?.plano !== "ANUAL"
+      )
+    ) {
+      return res.status(404).json({ sucesso: false, codigo: "ASSINATURA_NAO_ENCONTRADA", mensagem: "Não foi possível localizar essa assinatura." })
+    }
+
+    if (session?.status === "expired") {
       await prisma.assinatura.updateMany({
         where: { id: assinatura.id, usuarioId, status: "PENDENTE" },
         data: { status: "CANCELADA", canceladaEm: new Date() }
@@ -205,12 +226,36 @@ export async function consultarRetornoPagamentoController(req, res) {
       return res.status(200).json({ sucesso: true, estado: "erro", mensagem: "O checkout expirou. Volte ao Futlance para iniciar uma nova tentativa." })
     }
 
-    const subscriptionId =
-      typeof session.subscription === "string"
+    if (paymentIntent?.status === "succeeded") {
+      if (paymentIntent.amount_received !== 4788 || paymentIntent.currency !== "brl") {
+        return res.status(200).json({ sucesso: true, estado: "erro", mensagem: "O pagamento recebido não corresponde ao valor esperado. Entre em contato com o suporte." })
+      }
+
+      if (assinatura.status === "PENDENTE") {
+        const inicioEm = new Date()
+        const fimEm = new Date(inicioEm)
+        fimEm.setFullYear(fimEm.getFullYear() + 1)
+
+        await prisma.assinatura.updateMany({
+          where: { id: assinatura.id, usuarioId, status: "PENDENTE", formaPagamento: "pix", plano: "ANUAL" },
+          data: { status: "ATIVA", inicioEm, fimEm }
+        })
+
+        assinatura = await prisma.assinatura.findFirst({
+          where: { id: assinaturaId, usuarioId },
+          select: { id: true, status: true, formaPagamento: true, plano: true, fimEm: true }
+        })
+      }
+    }
+
+    const subscriptionId = session
+      ? typeof session.subscription === "string"
         ? session.subscription
         : session.subscription?.id
+      : null
 
     if (
+      session &&
       assinatura.formaPagamento === "cartao" &&
       assinatura.status === "PENDENTE" &&
       session.status === "complete" &&
@@ -257,8 +302,15 @@ export async function consultarRetornoPagamentoController(req, res) {
       return res.status(200).json({ sucesso: true, estado: "sucesso", mensagem: "Pagamento confirmado! Sua assinatura está ativa.", assinatura: { id: assinatura.id, status: assinatura.status, plano: assinatura.plano, fimEm: assinatura.fimEm } })
     }
 
-    if (session.status === "complete" && session.payment_status === "unpaid") {
+    if (
+      (session?.status === "complete" && session.payment_status === "unpaid") ||
+      ["processing", "requires_action"].includes(paymentIntent?.status)
+    ) {
       return res.status(200).json({ sucesso: true, estado: "pendente", mensagem: "Seu pagamento está sendo confirmado. Aguarde um instante." })
+    }
+
+    if (["canceled", "requires_payment_method"].includes(paymentIntent?.status)) {
+      return res.status(200).json({ sucesso: true, estado: "erro", mensagem: "O pagamento não foi concluído. Volte ao Futlance para iniciar uma nova tentativa." })
     }
 
     return res.status(200).json({ sucesso: true, estado: "pendente", mensagem: "Estamos aguardando a confirmação do pagamento. Isso pode levar alguns instantes." })

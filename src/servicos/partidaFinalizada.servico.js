@@ -287,6 +287,20 @@ export async function salvarPartidaFinalizada(partida) {
 
 }
 
+export async function removerPartidasFinalizadasAntigas() {
+  const limite = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+
+  const resultado = await prisma.partidaFinalizada.deleteMany({
+    where: {
+      data_iso: {
+        lt: limite
+      }
+    }
+  })
+
+  return resultado.count
+}
+
 /* =========================================================
    🔹 ATUALIZAR FINALIZADAS POR CAMPEONATO
 

@@ -17,6 +17,7 @@ import {
 import { atualizarNoticiasTimesAtivos } from "../assistenteTorcedor/notificacao/noticia.service.js"
 import { enviarNoticiasAssinantes } from "../assistenteTorcedor/notificacao/noticia.notificacao.service.js"
 import { enviarLembretesJogos } from "../assistenteTorcedor/notificacao/lembrete.notificacao.service.js"
+import { removerPartidasFinalizadasAntigas } from "../servicos/partidaFinalizada.servico.js"
 
 export function iniciarJobs() {
   cron.schedule("*/45 * * * *", async () => {
@@ -68,7 +69,7 @@ export function iniciarJobs() {
     } catch (erro) {
       console.error("❌ Erro ao atualizar notícias:", erro.message)
     }
-  })
+  }, { timezone: "America/Sao_Paulo" })
 
   cron.schedule("15 6 * * *", async () => {
     try {
@@ -80,7 +81,7 @@ export function iniciarJobs() {
     } catch (erro) {
       console.error("❌ Erro ao enfileirar notícias:", erro.message)
     }
-  })
+  }, { timezone: "America/Sao_Paulo" })
 
   cron.schedule("* * * * *", async () => {
     try {
@@ -89,6 +90,15 @@ export function iniciarJobs() {
       console.error("❌ Erro ao verificar lembretes:", erro.message)
     }
   })
+
+  cron.schedule("0 3 * * *", async () => {
+    try {
+      const removidas = await removerPartidasFinalizadasAntigas()
+      console.log(`🧹 Partidas finalizadas removidas (mais de 60 dias): ${removidas}`)
+    } catch (erro) {
+      console.error("❌ Erro ao remover partidas finalizadas antigas:", erro.message)
+    }
+  }, { timezone: "America/Sao_Paulo" })
 
   console.log("✅ Agendamentos do Futlance iniciados.")
 }

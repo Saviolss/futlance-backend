@@ -14,7 +14,7 @@ function inicioDoDiaBrasilia(data = new Date()) {
   }).formatToParts(data)
 
   const valores = Object.fromEntries(partes.map(parte => [parte.type, parte.value]))
-  const dataBrasilia = `${ valores.year } -${ valores.month } -${ valores.day } T00:00:00-03:00`
+  const dataBrasilia = `${valores.year}-${valores.month}-${valores.day}T00:00:00-03:00`
   return new Date(dataBrasilia)
 }
 

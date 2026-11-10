@@ -97,7 +97,8 @@ export async function autenticarUsuario(req, res, next) {
       },
       select: {
         id: true,
-        ativo: true
+        ativo: true,
+        emailVerificado: true
       }
     })
 
@@ -116,6 +117,15 @@ export async function autenticarUsuario(req, res, next) {
       return res.status(403).json({
         autenticado: false,
         mensagem: "Esta conta está bloqueada."
+      })
+    }
+
+    if (!usuario.emailVerificado) {
+      removerCookieSessao(res)
+
+      return res.status(403).json({
+        autenticado: false,
+        mensagem: "Confirme seu e-mail antes de fazer login."
       })
     }
 
