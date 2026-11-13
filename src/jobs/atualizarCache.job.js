@@ -7,14 +7,13 @@ import {
   buscarAgendaChampions,
   buscarAgendaCopaBrasil
 } from "../servicos/agenda.servico.js"
-
 import {
   buscarArtilheirosBrasileirao,
   buscarArtilheirosChampions,
   buscarArtilheirosCopaBrasil,
   atualizarArtilhariaCampeonato
 } from "../servicos/artilheiro.servico.js"
-import { atualizarNoticiasTimesAtivos } from "../assistenteTorcedor/notificacao/noticia.service.js"
+import { executarJobNoticiasTimes } from "../assistenteTorcedor/noticia/noticiaTime.job.js"
 import { enviarNoticiasAssinantes } from "../assistenteTorcedor/notificacao/noticia.notificacao.service.js"
 import { enviarLembretesJogos } from "../assistenteTorcedor/notificacao/lembrete.notificacao.service.js"
 import { removerPartidasFinalizadasAntigas } from "../servicos/partidaFinalizada.servico.js"
@@ -61,16 +60,18 @@ export function iniciarJobs() {
     }
   })
 
-  cron.schedule("0 6 * * *", async () => {
+  // Coleta automática de notícias: a cada 30 minutos
+  cron.schedule("*/30 * * * *", async () => {
     try {
-      console.log("📰 Atualizando notícias do Assistente...")
-      const total = await atualizarNoticiasTimesAtivos()
-      console.log(`✅ Notícias atualizadas: ${total}`)
+      console.log("📰 Iniciando robôs de notícias...")
+      const total = await executarJobNoticiasTimes()
+      console.log(`✅ Coleta concluída: ${total} notícias processadas.`)
     } catch (erro) {
-      console.error("❌ Erro ao atualizar notícias:", erro.message)
+      console.error("❌ Erro na coleta de notícias:", erro.message)
     }
   }, { timezone: "America/Sao_Paulo" })
 
+  // Distribuição diária de notícias aos assinantes
   cron.schedule("15 6 * * *", async () => {
     try {
       console.log("📲 Enfileirando notícias para os assinantes...")

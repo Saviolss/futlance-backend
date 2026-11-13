@@ -3,7 +3,7 @@ import {
   podeEnviarNoticia,
   TIPOS
 } from "./notificacao.service.js"
-import { buscarNoticiasTime } from "./noticia.service.js"
+import { buscarNoticiasTime } from "../noticia/noticia.service.js"
 import { prisma } from "../../lib/prisma.js"
 function criarReferenciaNoticia(noticiaId) {
   return String(noticiaId)

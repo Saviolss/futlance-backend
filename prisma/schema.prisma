@@ -291,7 +291,7 @@ model NoticiaTime {
   descricao  String?
   imagem     String?
   fonte      String
-  url        String   @unique
+  url        String
   idioma     String?
   data       DateTime?
   categoria  String[]
@@ -301,6 +301,7 @@ model NoticiaTime {
 
   time       Time     @relation(fields: [timeId], references: [timeId], onDelete: Cascade)
 
+  @@unique([timeId, url])
   @@index([timeId])
   @@index([data])
   @@index([timeId, data])
