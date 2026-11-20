@@ -2,7 +2,8 @@ import {
   enviarMensagemTexto,
   enviarTemplateNoticia,
   enviarTemplateLembrete,
-  enviarTemplateResultado
+  enviarTemplateResultado,
+  enviarTemplateDisponibilidade
 } from "./whatsapp.api.js"
 
 function validarNumero(numero) {
@@ -108,5 +109,20 @@ export async function enviarResultadoJogo({
       `${ mandante } ${ golsMandante } `,
       `${ golsVisitante } ${ visitante } `
     ])
+  )
+}
+
+export async function enviarAvisoDisponibilidadeWhatsApp({
+  numero,
+  nomeTime,
+  link
+}) {
+  validarNumero(numero)
+  validarTexto(nomeTime, "Nome do time")
+  validarTexto(link, "Link da área do torcedor")
+
+  return enviarTemplateDisponibilidade(
+    numero,
+    parametrosTexto([nomeTime, link])
   )
 }

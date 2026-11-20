@@ -52,24 +52,26 @@ model Assinatura {
 }
 
 model Time {
-  id                 Int       @id @default(autoincrement())
-  timeId             Int       @unique
-  nome               String
-  nomePopular        String
-  sigla              String?
-  escudo             String?
-  slug               String    @unique
-  tecnicoNome        String?
-  tecnicoPais        String?
-  idadeMedia         Float?
-  alturaMedia        Float?
-  camisa10           String?
-  jogadoresNoPais    Int?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  usuarios           Usuario[]
-  assinaturas        Assinatura[]
-  noticias           NoticiaTime[]
+  id                    Int       @id @default(autoincrement())
+  timeId                Int       @unique
+  nome                  String
+  nomePopular           String
+  apelido               String?
+  sigla                 String?
+  escudo                String?
+  slug                  String    @unique
+  tecnicoNome           String?
+  tecnicoPais           String?
+  idadeMedia            Float?
+  alturaMedia           Float?
+  camisa10              String?
+  jogadoresNoPais       Int?
+  disponivelAssinatura  Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  usuarios              Usuario[]
+  assinaturas           Assinatura[]
+  noticias              NoticiaTime[]
 }
 
 

@@ -1,9 +1,13 @@
 import {
   enviarResultadoJogo,
   enviarLembreteJogo,
-  enviarNoticiaWhatsApp
+  enviarNoticiaWhatsApp,
+  enviarAvisoDisponibilidadeWhatsApp
 } from "../whatsapp/whatsapp.service.js"
-import { STATUS } from "./fila.notificacao.service.js"
+import {
+  STATUS,
+  TIPO_TIME_INDISPONIVEL
+} from "./fila.notificacao.service.js"
 import { prisma } from "../../lib/prisma.js"
 
 const LIMITE_LOTE = 20
@@ -13,7 +17,8 @@ const INTERVALO_MAXIMO_MINUTOS = 60
 const TIPOS = {
   RESULTADO_JOGO: "RESULTADO_JOGO",
   JOGO_5_MINUTOS: "JOGO_5_MINUTOS",
-  NOTICIA_TIME: "NOTICIA_TIME"
+  NOTICIA_TIME: "NOTICIA_TIME",
+  TIME_INDISPONIVEL: TIPO_TIME_INDISPONIVEL
 }
 
 class ErroPermanente extends Error {
@@ -103,7 +108,14 @@ async function reservarTarefas(limite = LIMITE_LOTE) {
           select: {
             id: true,
             whatsapp: true,
-            status: true
+            status: true,
+            timeId: true,
+            time: {
+              select: {
+                nomePopular: true,
+                disponivelAssinatura: true
+              }
+            }
           }
         }
       }
@@ -248,12 +260,36 @@ async function enviarNoticia(tarefa) {
   })
 }
 
+async function enviarAvisoTimeIndisponivel(tarefa) {
+  const numero = tarefa.assinatura.whatsapp
+  const nomeTime = tarefa.dados?.nomeTime
+  const link = tarefa.dados?.linkConfiguracoes
+
+  return enviarAvisoDisponibilidadeWhatsApp({
+    numero,
+    nomeTime,
+    link
+  })
+}
+
 async function processarTarefa(tarefa) {
   try {
     if (await verificarHistorico(tarefa)) return "JA_REGISTRADA"
 
     if (tarefa.assinatura?.status !== "ATIVA" || !tarefa.assinatura.whatsapp) {
       throw new ErroPermanente("Assinatura inativa ou sem WhatsApp.")
+    }
+
+    // O aviso de indisponibilidade precisa passar mesmo com o time desativado.
+    if (
+      tarefa.tipo !== TIPOS.TIME_INDISPONIVEL &&
+      tarefa.assinatura.time?.disponivelAssinatura !== true
+    ) {
+      await marcarFalhaDefinitiva(
+        tarefa,
+        "Time indisponível para notificações. Envio cancelado."
+      )
+      return "FALHA"
     }
 
     switch (tarefa.tipo) {
@@ -265,6 +301,9 @@ async function processarTarefa(tarefa) {
         break
       case TIPOS.NOTICIA_TIME:
         await enviarNoticia(tarefa)
+        break
+      case TIPOS.TIME_INDISPONIVEL:
+        await enviarAvisoTimeIndisponivel(tarefa)
         break
       default:
         throw new ErroPermanente(`Tipo de notificação não suportado: ${tarefa.tipo}`)

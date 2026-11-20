@@ -1,17 +1,14 @@
+
 import { prisma } from "../lib/prisma.js"
 
-/* ======================================================
-   LISTA DE TIMES
-====================================================== */
-
 export async function buscarTimesBanco() {
-
-  const times = await prisma.time.findMany({
+  return prisma.time.findMany({
     select: {
       id: true,
       timeId: true,
       nome: true,
       nomePopular: true,
+      apelido: true,
       sigla: true,
       escudo: true,
       slug: true,
@@ -21,6 +18,7 @@ export async function buscarTimesBanco() {
       alturaMedia: true,
       camisa10: true,
       jogadoresNoPais: true,
+      disponivelAssinatura: true,
       createdAt: true,
       updatedAt: true
     },
@@ -28,25 +26,17 @@ export async function buscarTimesBanco() {
       nomePopular: "asc"
     }
   })
-
-  return times
 }
 
-/* ======================================================
-   TIME POR SLUG
-====================================================== */
-
 export async function buscarTimePorSlugBanco(slug) {
-
   const time = await prisma.time.findUnique({
-    where: {
-      slug
-    },
+    where: { slug },
     select: {
       id: true,
       timeId: true,
       nome: true,
       nomePopular: true,
+      apelido: true,
       sigla: true,
       escudo: true,
       slug: true,
@@ -56,35 +46,28 @@ export async function buscarTimePorSlugBanco(slug) {
       alturaMedia: true,
       camisa10: true,
       jogadoresNoPais: true,
+      disponivelAssinatura: true,
       createdAt: true,
       updatedAt: true
     }
   })
 
-  if (!time) {
-    return null
-  }
+  if (!time) return null
 
-  const elenco = await prisma.elenco.findMany({
-    where: {
-      timeId: time.timeId
-    },
-    orderBy: {
-      numeroCamisa: "asc"
-    }
-  })
-
-  const proximasPartidas = await prisma.partida.findMany({
-    where: {
-      timeId: time.timeId
-    },
-    orderBy: {
-      data: "asc"
-    }
-  })
+  const [elenco, proximasPartidas] = await Promise.all([
+    prisma.elenco.findMany({
+      where: { timeId: time.timeId },
+      orderBy: { numeroCamisa: "asc" }
+    }),
+    prisma.partida.findMany({
+      where: { timeId: time.timeId },
+      orderBy: { data: "asc" }
+    })
+  ])
 
   return {
     ...time,
+    elenco,
     proximasPartidas
   }
 }

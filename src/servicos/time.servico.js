@@ -1,21 +1,13 @@
+
 import {
   buscarTabelaApi,
   buscarTimeApi,
   buscarProximasPartidasTimeApi
 } from "../servicos/apiFutebol.servico.js"
-
-import {
-  getCache,
-  setCache
-} from "../cache/cacheMemoria.js"
-
+import { getCache, setCache } from "../cache/cacheMemoria.js"
 import { CACHE_TTL } from "../constantes/cacheTTL.js"
-
 import { CAMPEONATOS } from "../constantes/campeonatos.js"
-
-/* ======================================================
-   SLUG
-====================================================== */
+import { prisma } from "../lib/prisma.js"
 
 function gerarSlug(nome = "") {
   return nome
@@ -26,65 +18,43 @@ function gerarSlug(nome = "") {
     .replace(/^-+|-+$/g, "")
 }
 
-/* ======================================================
-   EXTRAI TIMES DA COPA
-====================================================== */
-
 function extrairTimesCopa(tabela) {
-
   const times = []
 
   function adicionarTimes(valor) {
-
     if (Array.isArray(valor)) {
-
       valor.forEach(item => {
-
         const time = item?.time || item
-
-        if (!time?.time_id) {
-          return
-        }
+        if (!time?.time_id) return
 
         times.push({
           time_id: time.time_id,
           nome: time.nome_popular || time.nome,
-          escudo: time.escudo
+          escudo: time.escudo,
+          apelido: time.apelido
         })
-
       })
-
       return
     }
 
     if (valor && typeof valor === "object") {
       Object.values(valor).forEach(adicionarTimes)
     }
-
   }
 
   adicionarTimes(tabela)
-
   return times
 }
 
-/* ======================================================
-   LISTA DE TIMES DA COPA
-====================================================== */
-
 export async function buscarTimesCampeonatos(
-  campeonatos = [
-    CAMPEONATOS.BRASILEIRAO,
-    CAMPEONATOS.CHAMPIONS
-  ]
+  campeonatos = [CAMPEONATOS.BRASILEIRAO],
+  { ignorarCache = false } = {}
 ) {
+  const chave = `campeonatos:times:${[...new Set(campeonatos)].sort().join("-")}`
 
-  const chave = "campeonatos:times"
-
-  const cache = getCache(chave)
-
-  if (cache) {
-    return cache
+  if (!ignorarCache) {
+    const cache = getCache(chave)
+    if (cache) return cache
   }
 
   const idsCampeonato = [...new Set(campeonatos)]
@@ -110,17 +80,17 @@ export async function buscarTimesCampeonatos(
     resultado => resultado.status === "fulfilled"
   )
 
-  if (resultadosValidos.length === 0) {
-    throw new Error("Não foi possível buscar os times de nenhum campeonato.")
+  // Não aceita resultado parcial para evitar desativar times incorretamente.
+  if (resultadosValidos.length !== idsCampeonato.length) {
+    throw new Error("Falha ao buscar todos os campeonatos. Lista de times não atualizada.")
   }
 
-  const times = resultadosValidos
-    .flatMap(resultado => extrairTimesCopa(resultado.value))
+  const times = resultadosValidos.flatMap(
+    resultado => extrairTimesCopa(resultado.value)
+  )
 
   const unicos = [
-    ...new Map(
-      times.map(t => [t.time_id, t])
-    ).values()
+    ...new Map(times.map(time => [Number(time.time_id), time])).values()
   ]
 
   const resultado = unicos.map(time => ({
@@ -129,66 +99,37 @@ export async function buscarTimesCampeonatos(
   }))
 
   if (resultado.length > 0) {
-    setCache(
-      chave,
-      resultado,
-      CACHE_TTL.TABELA
-    )
+    setCache(chave, resultado, CACHE_TTL.TABELA)
   }
 
   return resultado
 }
 
-
 export async function buscarTimesCopa() {
   return buscarTimesCampeonatos()
 }
-/* ======================================================
-   PRÓXIMAS PARTIDAS
-====================================================== */
 
 function normalizarProximasPartidas(partidas = {}) {
-
   const lista = []
 
   Object.values(partidas).forEach(campeonato => {
-
     if (!Array.isArray(campeonato)) return
 
     campeonato.forEach(partida => {
-
       lista.push({
         partida_id: partida.partida_id,
-
-        campeonato:
-          partida.campeonato?.nome,
-
-        status:
-          partida.status,
-
-        data:
-          partida.data_realizacao,
-
-        hora:
-          partida.hora_realizacao,
-
-        estadio:
-          partida.estadio?.nome_popular,
-
+        campeonato: partida.campeonato?.nome,
+        status: partida.status,
+        data: partida.data_realizacao,
+        hora: partida.hora_realizacao,
+        estadio: partida.estadio?.nome_popular,
         mandante: {
-          nome:
-            partida.time_mandante?.nome_popular,
-
-          escudo:
-            partida.time_mandante?.escudo
+          nome: partida.time_mandante?.nome_popular,
+          escudo: partida.time_mandante?.escudo
         },
-
         visitante: {
-          nome:
-            partida.time_visitante?.nome_popular,
-
-          escudo:
-            partida.time_visitante?.escudo
+          nome: partida.time_visitante?.nome_popular,
+          escudo: partida.time_visitante?.escudo
         }
       })
     })
@@ -197,73 +138,38 @@ function normalizarProximasPartidas(partidas = {}) {
   return lista
 }
 
-/* ======================================================
-   DETALHES DO TIME
-====================================================== */
-
 export async function buscarTimePorSlug(slug) {
-
   const chave = `time:${slug}`
-
   const cache = getCache(chave)
 
-  if (cache) {
-    return cache
-  }
+  if (cache) return cache
 
   const times = await buscarTimesCampeonatos()
+  const encontrado = times.find(time => time.slug === slug)
 
-  const encontrado = times.find(
-    t => t.slug === slug
-  )
+  if (!encontrado) return null
 
-  if (!encontrado) {
-    return null
-  }
-
-  const [
-    time,
-    proximas
-  ] = await Promise.all([
-    buscarTimeApi(
-      encontrado.time_id
-    ),
-
-    buscarProximasPartidasTimeApi(
-      encontrado.time_id
-    )
+  const [time, proximas, registro] = await Promise.all([
+    buscarTimeApi(encontrado.time_id),
+    buscarProximasPartidasTimeApi(encontrado.time_id),
+    prisma.time.findUnique({
+      where: { timeId: encontrado.time_id },
+      select: { disponivelAssinatura: true }
+    })
   ])
 
   const resultado = {
-
-    time_id:
-      time.time_id,
-
-    nome:
-      time.nome,
-
-    nome_popular:
-      time.nome_popular,
-
-    sigla:
-      time.sigla,
-
-    escudo:
-      time.escudo,
-
+    time_id: time.time_id,
+    nome: time.nome,
+    nome_popular: time.nome_popular,
+    apelido: time.apelido,
+    sigla: time.sigla,
+    disponivelAssinatura: registro?.disponivelAssinatura === true,
+    escudo: time.escudo,
     slug,
-
-    proximasPartidas:
-      normalizarProximasPartidas(
-        proximas
-      )
+    proximasPartidas: normalizarProximasPartidas(proximas)
   }
 
-  setCache(
-    chave,
-    resultado,
-    CACHE_TTL.TABELA
-  )
-
+  setCache(chave, resultado, CACHE_TTL.TABELA)
   return resultado
 }

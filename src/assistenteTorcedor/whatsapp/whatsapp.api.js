@@ -7,8 +7,10 @@ const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID
 export const TEMPLATES = {
   RESULTADO: "resultado",
   NOTICIA: "noticia",
-  LEMBRETE: "lembrete"
+  LEMBRETE: "lembrete",
+  DISPONIBILIDADE: "disponibilidade"
 }
+
 
 function validarConfiguracao() {
   if (!WHATSAPP_TOKEN) {
@@ -155,6 +157,15 @@ export async function enviarTemplateLembrete(numero, componentes) {
   return enviarTemplateWhatsApp({
     numero,
     nomeTemplate: TEMPLATES.LEMBRETE,
+    componentes
+  })
+}
+
+
+export async function enviarTemplateDisponibilidade(numero, componentes) {
+  return enviarTemplateWhatsApp({
+    numero,
+    nomeTemplate: TEMPLATES.DISPONIBILIDADE,
     componentes
   })
 }

@@ -1,4 +1,6 @@
+
 import { prisma } from "../../lib/prisma.js"
+
 const STATUS = {
   PENDENTE: "PENDENTE",
   PROCESSANDO: "PROCESSANDO",
@@ -6,6 +8,7 @@ const STATUS = {
   FALHA: "FALHA"
 }
 
+export const TIPO_TIME_INDISPONIVEL = "TIME_INDISPONIVEL"
 const MAX_TENTATIVAS_PADRAO = 5
 
 export async function enfileirarNotificacao({
@@ -18,11 +21,9 @@ export async function enfileirarNotificacao({
   if (!assinaturaId || !tipo || referenciaId == null) {
     throw new Error("Assinatura, tipo e referência são obrigatórios.")
   }
-
   if (!dados || typeof dados !== "object" || Array.isArray(dados)) {
     throw new Error("Os dados da notificação são inválidos.")
   }
-
   if (!Number.isInteger(maxTentativas) || maxTentativas < 1) {
     throw new Error("O número máximo de tentativas deve ser positivo.")
   }
@@ -33,11 +34,27 @@ export async function enfileirarNotificacao({
       status: "ATIVA",
       whatsapp: { not: "" }
     },
-    select: { id: true }
+    select: {
+      id: true,
+      timeId: true,
+      time: {
+        select: {
+          disponivelAssinatura: true
+        }
+      }
+    }
   })
 
   if (!assinatura) {
     return { criada: false, motivo: "ASSINATURA_INATIVA" }
+  }
+
+  // O aviso de indisponibilidade é a única exceção.
+  if (
+    tipo !== TIPO_TIME_INDISPONIVEL &&
+    assinatura.time?.disponivelAssinatura !== true
+  ) {
+    return { criada: false, motivo: "TIME_INDISPONIVEL" }
   }
 
   try {
@@ -57,7 +74,6 @@ export async function enfileirarNotificacao({
     if (erro?.code === "P2002") {
       return { criada: false, motivo: "JA_EXISTE" }
     }
-
     throw erro
   }
 }
