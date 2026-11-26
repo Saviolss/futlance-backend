@@ -3,7 +3,7 @@ import Stripe from "stripe"
 import { prisma } from "../../lib/prisma.js"
 
 const stripe = new Stripe(process.env.STRIPE_KEY)
-
+const stripePixValorAnual = Number(process.env.STRIPE_VALOR_PIX_ANUAL)
 function obterDataStripe(timestamp) {
   return timestamp ? new Date(timestamp * 1000) : null
 }
@@ -110,7 +110,7 @@ async function ativarAssinaturaPix(paymentIntent) {
 
   if (assinatura.status === "ATIVA") return
 
-  if (paymentIntent.amount_received !== 4788 || paymentIntent.currency !== "brl") {
+  if (paymentIntent.amount_received !== stripePixValorAnual || paymentIntent.currency !== "brl") {
     console.error("Webhook Pix: valor ou moeda incompatível:", assinaturaId)
     return
   }

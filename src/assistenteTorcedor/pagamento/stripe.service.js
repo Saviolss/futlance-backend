@@ -3,8 +3,8 @@ import Stripe from "stripe"
 
 const stripe = new Stripe(process.env.STRIPE_KEY)
 const FRONTEND_URL = process.env.FRONTEND_URL
-const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID
-const VALOR_PIX_ANUAL = 4788
+const STRIPE_PRICE_ID_CARTAO = process.env.STRIPE_PRICE_ID_CARTAO
+const VALOR_PIX_ANUAL = Number(process.env.STRIPE_VALOR_PIX_ANUAL)
 
 function validarConfiguracao() {
   if (!process.env.STRIPE_KEY) throw new Error("STRIPE_KEY não configurada.")
@@ -24,14 +24,14 @@ export async function criarCheckoutStripe({ assinaturaId, usuarioId, email, time
   }
 
   if (pagamento === "cartao") {
-    if (!STRIPE_PRICE_ID) throw new Error("STRIPE_PRICE_ID não configurado.")
+    if (!STRIPE_PRICE_ID_CARTAO) throw new Error("STRIPE_PRICE_ID_CARTAO não configurado.")
 
     const session = await stripe.checkout.sessions.create({
       ui_mode: "embedded_page",
       redirect_on_completion: "if_required",
       mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: STRIPE_PRICE_ID_CARTAO, quantity: 1 }],
       customer_email: email,
       metadata,
       subscription_data: { metadata },
@@ -50,6 +50,9 @@ export async function criarCheckoutStripe({ assinaturaId, usuarioId, email, time
   }
 
   if (pagamento === "pix") {
+    if (!Number.isInteger(VALOR_PIX_ANUAL) || VALOR_PIX_ANUAL <= 0) {
+      throw new Error("STRIPE_VALOR_PIX_ANUAL inválido ou não configurado.")
+    }
     const intent = await stripe.paymentIntents.create({
       amount: VALOR_PIX_ANUAL,
       currency: "brl",

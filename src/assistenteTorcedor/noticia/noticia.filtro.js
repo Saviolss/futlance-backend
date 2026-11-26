@@ -1,3 +1,4 @@
+
 function normalizarTexto(texto = "") {
   return String(texto)
     .normalize("NFD")
@@ -7,214 +8,227 @@ function normalizarTexto(texto = "") {
     .trim()
 }
 
-const NOMES_EQUIVALENTES_TIMES = [
-  ["santos", "santos fc", "santos futebol clube"],
-  ["flamengo", "mengao", "clube de regatas do flamengo"],
-  ["palmeiras", "verdao", "sociedade esportiva palmeiras"],
-  ["corinthians", "timao", "sport club corinthians paulista"],
-  ["sao paulo", "sao paulo fc", "spfc", "tricolor paulista"],
-  ["gremio", "gremio fbpa", "gremio porto alegrense"],
-  ["internacional", "sport club internacional", "colorado"],
-  ["vasco", "vasco da gama", "club de regatas vasco da gama"],
-  ["atletico mineiro", "atletico mg", "galo", "clube atletico mineiro"],
-  ["athletico paranaense", "atletico paranaense", "athletico pr", "furacao"],
-  ["botafogo", "botafogo de futebol e regatas", "fogao"],
-  ["fluminense", "fluminense football club", "flu"],
-  ["cruzeiro", "cruzeiro esporte clube"],
-  ["red bull bragantino", "rb bragantino", "bragantino"],
-  ["bahia", "esporte clube bahia"],
-  ["fortaleza", "fortaleza esporte clube"],
-  ["ceara", "ceara sporting club"],
-  ["sport", "sport club do recife"],
-  ["vitoria", "esporte clube vitoria"],
-  ["goias", "goias esporte clube"]
-].map(grupo => grupo.map(normalizarTexto))
-
-const NOMES_AMBIGUOS = new Set([
-  "santos",
-  "sao paulo",
-  "inter",
-  "sport",
-  "bahia",
-  "vitoria"
-])
-
 const INDICADORES_CLUBE_NO_TITULO = [
-  "x",
-  "vence",
-  "enfrenta",
-  "encara",
-  "joga",
-  "disputa",
-  "anuncia",
-  "contrata",
-  "treina",
-  "faz",
-  "segue",
-  "perde",
-  "empata",
-  "avança",
-  "avançam",
-  "busca",
-  "terá",
-  "tem",
-  "abre",
-  "fecha",
-  "recebe",
-  "visita",
-  "viaja",
-  "demite",
-  "apresenta",
-  "confirma",
-  "volta",
-  "renova",
-  "conquista",
-  "decide",
-  "está",
-  "vai",
-  "pede",
-  "seleção",
-  "classico",
-  "torcida",
-  "clube",
-  "time"
+  "vence", "vencem", "enfrenta", "encara", "joga", "disputa",
+  "anuncia", "contrata", "treina", "faz", "segue", "perde",
+  "empata", "avanca", "avancam", "busca", "tera", "tem",
+  "abre", "fecha", "recebe", "visita", "viaja", "demite",
+  "apresenta", "confirma", "volta", "renova", "conquista",
+  "decide", "esta", "vai", "pede", "torcida", "clube",
+  "time", "elenco", "contratacao", "reforco", "derrota",
+  "vitora", "classifica", "elimina", "goleia", "demite",
+  "acerta", "negocia", "contrata", "dispensa", "pressiona",
+  "enfrentara", "encara", "treinador", "presidente"
 ].map(normalizarTexto)
 
 const PREPOSICOES_ANTES_DO_CLUBE = [
-  "do",
-  "no",
-  "pelo",
-  "para o",
-  "contra o",
-  "com o",
-  "sobre o",
-  "ao",
-  "x"
+  "do", "da", "no", "na", "pelo", "pela", "para o",
+  "para a", "contra o", "contra a", "com o", "com a",
+  "sobre o", "sobre a", "ao", "a", "entre"
 ]
 
 const INDICADORES_FUTEBOL = [
-  "futebol",
-  "campeonato",
+  "futebol", "campeonato", "brasileirao", "copa",
+  "libertadores", "sul americana", "copa do brasil",
+  "final", "semifinal", "classificacao", "serie a",
+  "serie b", "serie c", "futebol feminino", "selecao",
+  "gol", "gols", "partida", "jogo", "rodada",
+  "classico", "torcida", "elenco", "contratacao",
+  "reforco", "treino", "treinador", "tecnico",
+  "presidente", "dirigente", "diretoria", "contrato",
+  "atacante", "zagueiro", "goleiro", "volante",
+  "lateral", "meia", "gramado", "estadio",
+  "arbitragem", "pênalti", "penalti", "escalação",
+  "escala", "relacionados", "mercado da bola",
+  "transferencia", "fifa", "cbf", "conmebol",
+  "mundial", "continental", "copa do mundo",
+  "brasileiro", "paulista", "carioca", "mineiro",
+  "gaucho", "nordestao", "recopa", "supercopa"
+].map(normalizarTexto)
+
+const NOMES_AMBIGUOS = new Set([
+  "santos",
+  "bahia",
+  "vitoria",
+  "sport",
+  "inter",
+  "america",
+  "atletico",
+  "portuguesa",
+  "juventude",
+  "coritiba",
+  "cruzeiro",
+  "vasco"
+].map(normalizarTexto))
+
+const SEGMENTOS_NAO_CLUBE = new Set([
   "brasileirao",
+  "brasileiro",
   "campeonato brasileiro",
   "copa",
-  "libertadores",
   "copa do brasil",
-  "final",
-  "semifinal",
-  "classificacao",
+  "libertadores",
+  "sul americana",
+  "paulista",
+  "carioca",
+  "mineiro",
+  "gaucho",
   "serie a",
   "serie b",
   "serie c",
-  "futebol feminino",
-  "selecao",
-  "gol",
-  "gols",
-  "partida",
-  "jogo",
-  "rodada",
-  "classico",
-  "torcida",
-  "elenco",
-  "escalação",
-  "contratacao",
-  "reforco",
-  "treino",
-  "treinador",
-  "tecnico",
-  "presidente",
-  "eleicao",
-  "dirigente",
-  "diretoria",
-  "contrato",
-  "atacante",
-  "zagueiro",
-  "goleiro",
-  "volante",
-  "lateral",
-  "meia"
-].map(normalizarTexto)
+  "futebol",
+  "artigo",
+  "noticia",
+  "noticias",
+  "times",
+  "time",
+  "esportes"
+])
 
 function contemFrase(texto, frase) {
+  if (!texto || !frase) return false
   return ` ${texto} `.includes(` ${frase} `)
 }
 
-function nomeAmbiguoNoTitulo(titulo, nome) {
-  const tituloComEspacos = ` ${titulo} `
-  const mencao = ` ${nome} `
-  const inicio = tituloComEspacos.indexOf(mencao)
-  if (inicio < 0) return false
-
-  const antesNome = tituloComEspacos.slice(0, inicio + 1)
-  const aposNome = tituloComEspacos.slice(inicio + mencao.length).trimStart()
-  const mencaoComoSujeito = INDICADORES_CLUBE_NO_TITULO.some(indicador =>
-    aposNome.startsWith(`${indicador} `) || aposNome === indicador
-  )
-  const mencaoComPreposicao = PREPOSICOES_ANTES_DO_CLUBE.some(preposicao =>
-    antesNome.endsWith(`${preposicao} `)
-  )
-  const mencaoEmConfronto = NOMES_EQUIVALENTES_TIMES
-    .flat()
-    .some(outroTime =>
-      outroTime !== nome && aposNome.startsWith(`e ${outroTime} `)
-    )
-
-  return mencaoComoSujeito || mencaoComPreposicao || mencaoEmConfronto
+function contemAlgumIndicador(texto, indicadores) {
+  return indicadores.some(indicador => contemFrase(texto, indicador))
 }
 
 function obterNomesDoTime(time) {
-  const nomesDoTime = [time.nomePopular, time.nome]
-    .filter(Boolean)
-    .map(normalizarTexto)
-    .filter(nome => nome.length >= 3)
-
-  const nomesEquivalentes = NOMES_EQUIVALENTES_TIMES
-    .filter(grupo => grupo.some(nome => nomesDoTime.includes(nome)))
-    .flat()
-
-  return [...new Set([...nomesDoTime, ...nomesEquivalentes])]
+  return [...new Set(
+    [time.nome, time.nomePopular, time.apelido, time.slug]
+      .filter(Boolean)
+      .map(normalizarTexto)
+      .filter(nome => nome.length >= 3)
+  )]
 }
 
-function obterSlugTimeNaUrl(url) {
-  if (!url) return null
+function obterSlugTimeNaUrl(url, nomesDoTime, time) {
+  if (!url) return false
 
   try {
     const segmentos = new URL(url).pathname
       .split("/")
       .filter(Boolean)
       .map(normalizarTexto)
-    const indiceTimes = segmentos.lastIndexOf("times")
-    const indiceFutebol = segmentos.lastIndexOf("futebol")
-    const indiceTime = indiceTimes >= 0 ? indiceTimes : indiceFutebol
 
-    return indiceTime >= 0 ? segmentos[indiceTime + 1] || null : null
+    const slugsDoTime = [
+      time.slug,
+      ...nomesDoTime
+    ]
+      .filter(Boolean)
+      .map(normalizarTexto)
+
+    // Reconhece URLs do tipo /times/palmeiras/
+    const indiceTimes = segmentos.lastIndexOf("times")
+    if (
+      indiceTimes >= 0 &&
+      slugsDoTime.includes(segmentos[indiceTimes + 1])
+    ) return true
+
+    // Reconhece URLs do tipo /futebol/flamengo/artigo/
+    const indiceFutebol = segmentos.lastIndexOf("futebol")
+    if (indiceFutebol >= 0) {
+      const possivelTime = segmentos[indiceFutebol + 1]
+      if (
+        possivelTime &&
+        !SEGMENTOS_NAO_CLUBE.has(possivelTime) &&
+        slugsDoTime.includes(possivelTime)
+      ) return true
+    }
+
+    // Reconhece URLs de outras fontes com o slug do clube.
+    return segmentos.some(segmento =>
+      slugsDoTime.includes(segmento)
+    )
   } catch {
-    return null
+    return false
   }
 }
 
+function nomeAmbiguoNoTitulo(titulo, nome) {
+  const posicao = titulo.indexOf(` ${nome} `)
+  if (posicao < 0) return false
+
+  const antesNome = titulo.slice(0, posicao + 1)
+  const depoisNome = titulo.slice(posicao + nome.length + 2).trimStart()
+
+  const mencaoComoSujeito = contemAlgumIndicador(
+    depoisNome,
+    INDICADORES_CLUBE_NO_TITULO
+  )
+
+  const mencaoComPreposicao = PREPOSICOES_ANTES_DO_CLUBE.some(preposicao =>
+    antesNome.endsWith(`${preposicao} `)
+  )
+
+  return mencaoComoSujeito || mencaoComPreposicao
+}
+
+function mencionaTime(texto, nomesDoTime, titulo = false) {
+  return nomesDoTime.some(nome => {
+    if (!contemFrase(texto, nome)) return false
+
+    if (NOMES_AMBIGUOS.has(nome)) {
+      return titulo && nomeAmbiguoNoTitulo(texto, nome)
+    }
+
+    return true
+  })
+}
+
 export function noticiaPertenceAoTime(noticia, time) {
+  if (!noticia || !time) return false
+
   const titulo = normalizarTexto(noticia.titulo)
   const descricao = normalizarTexto(noticia.descricao)
+
   const categorias = normalizarTexto(
-    Array.isArray(noticia.categoria) ? noticia.categoria.join(" ") : noticia.categoria
+    Array.isArray(noticia.categoria)
+      ? noticia.categoria.join(" ")
+      : noticia.categoria
   )
-  const contexto = [titulo, descricao, categorias].filter(Boolean).join(" ")
+
+  const contexto = [titulo, descricao, categorias]
+    .filter(Boolean)
+    .join(" ")
+
   const nomesDoTime = obterNomesDoTime(time)
 
-  const mencionaTimeNoTitulo = nomesDoTime.some(nome =>
-    contemFrase(titulo, nome) &&
-    (!NOMES_AMBIGUOS.has(nome) || nomeAmbiguoNoTitulo(titulo, nome))
-  )
-  const mencionaFutebol = INDICADORES_FUTEBOL.some(indicador =>
-    contemFrase(contexto, indicador)
-  )
-  const slugTimeNaUrl = obterSlugTimeNaUrl(noticia.url)
-  const slugsDoTime = [time.slug, ...nomesDoTime]
-    .filter(Boolean)
-    .map(normalizarTexto)
-  const urlEspecificaDoTime = slugTimeNaUrl && slugsDoTime.includes(slugTimeNaUrl)
+  if (!titulo || !nomesDoTime.length) return false
 
-  if (slugTimeNaUrl && !urlEspecificaDoTime) return false
-  return urlEspecificaDoTime || (mencionaTimeNoTitulo && mencionaFutebol)
+  // Primeiro verifica se a URL identifica diretamente o clube.
+  const urlEspecificaDoTime = obterSlugTimeNaUrl(
+    noticia.url,
+    nomesDoTime,
+    time
+  )
+
+  if (urlEspecificaDoTime) return true
+
+  // Exige contexto futebolístico para evitar notícias de outros assuntos.
+  const mencionaFutebol = contemAlgumIndicador(
+    contexto,
+    INDICADORES_FUTEBOL
+  )
+
+  if (!mencionaFutebol) return false
+
+  // Procura o time no título.
+  const mencionaTimeNoTitulo = mencionaTime(
+    titulo,
+    nomesDoTime,
+    true
+  )
+
+  if (mencionaTimeNoTitulo) return true
+
+  // Procura o time na descrição.
+  const mencionaTimeNaDescricao = mencionaTime(
+    descricao,
+    nomesDoTime,
+    false
+  )
+
+  return mencionaTimeNaDescricao
 }

@@ -1,12 +1,21 @@
 import { enfileirarNotificacao } from "./fila.notificacao.service.js"
-import {
-  podeEnviarNoticia,
-  TIPOS
-} from "./notificacao.service.js"
+import { podeEnviarNoticia, TIPOS } from "./notificacao.service.js"
 import { buscarNoticiasTime } from "../noticia/noticia.service.js"
 import { prisma } from "../../lib/prisma.js"
+
+const LIMITE_BUSCA_NOTICIAS = 30
+
 function criarReferenciaNoticia(noticiaId) {
   return String(noticiaId)
+}
+
+function validarUrl(url) {
+  try {
+    const endereco = new URL(url)
+    return ["http:", "https:"].includes(endereco.protocol)
+  } catch {
+    return false
+  }
 }
 
 export async function enviarNoticiasAssinatura(assinatura) {
@@ -14,7 +23,11 @@ export async function enviarNoticiasAssinatura(assinatura) {
     throw new Error("Assinatura não informada.")
   }
 
-  if (assinatura.status !== "ATIVA" || !assinatura.whatsapp || !assinatura.timeId) {
+  if (
+    assinatura.status !== "ATIVA" ||
+    !assinatura.whatsapp ||
+    !assinatura.timeId
+  ) {
     return { enfileiradas: 0, ignoradas: 0, erros: 0 }
   }
 
@@ -25,14 +38,21 @@ export async function enviarNoticiasAssinatura(assinatura) {
 
   const time = await prisma.time.findUnique({
     where: { timeId: assinatura.timeId },
-    select: { nomePopular: true }
+    select: {
+      nomePopular: true,
+      disponivelAssinatura: true
+    }
   })
 
-  if (!time?.nomePopular) {
-    throw new Error(`Time ${assinatura.timeId} não encontrado ou sem nome.`)
+  if (!time?.nomePopular || time.disponivelAssinatura !== true) {
+    return { enfileiradas: 0, ignoradas: 0, erros: 0 }
   }
 
-  const noticias = await buscarNoticiasTime(assinatura.timeId, 10)
+  const noticias = await buscarNoticiasTime(
+    assinatura.timeId,
+    LIMITE_BUSCA_NOTICIAS
+  )
+
   let enfileiradas = 0
   let ignoradas = 0
   let erros = 0
@@ -40,7 +60,12 @@ export async function enviarNoticiasAssinatura(assinatura) {
   for (const noticia of noticias) {
     if (enfileiradas >= 1) break
 
-    if (!noticia?.id || !noticia.titulo || !noticia.url || !noticia.imagem) {
+    if (
+      !noticia?.id ||
+      !noticia.titulo?.trim() ||
+      !validarUrl(noticia.url) ||
+      !validarUrl(noticia.imagem)
+    ) {
       ignoradas++
       continue
     }

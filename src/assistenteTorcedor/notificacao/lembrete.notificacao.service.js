@@ -71,7 +71,7 @@ export async function enviarLembretesJogos() {
     const referenciaId = String(partida.partida_id)
 
     try {
-      const jogoAoVivo = await prisma.partidaAoVivo.findUnique({
+      const jogoAoVivo = await prisma.partidaAoVivo.findFirst({
         where: { partida_id: partida.partida_id },
         select: {
           estadio_nome: true,

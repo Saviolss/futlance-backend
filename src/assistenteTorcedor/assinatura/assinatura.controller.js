@@ -1,13 +1,13 @@
 import Stripe from "stripe"
 import { prisma } from "../../lib/prisma.js"
-
-const stripe = new Stripe(process.env.STRIPE_KEY)
-
 import {
   criarAssinatura,
   listarAssinaturas,
   cancelarAssinatura
 } from "./assinatura.service.js"
+
+const stripe = new Stripe(process.env.STRIPE_KEY)
+const VALOR_PIX_ANUAL = Number(process.env.STRIPE_VALOR_PIX_ANUAL)
 
 export async function criarAssinaturaController(req, res) {
   try {
@@ -227,7 +227,10 @@ export async function consultarRetornoPagamentoController(req, res) {
     }
 
     if (paymentIntent?.status === "succeeded") {
-      if (paymentIntent.amount_received !== 4788 || paymentIntent.currency !== "brl") {
+      if (!Number.isInteger(VALOR_PIX_ANUAL) || VALOR_PIX_ANUAL <= 0) {
+        throw new Error("STRIPE_VALOR_PIX_ANUAL inválido ou não configurado.")
+      }
+      if (paymentIntent.amount_received !== VALOR_PIX_ANUAL || paymentIntent.currency !== "brl") {
         return res.status(200).json({ sucesso: true, estado: "erro", mensagem: "O pagamento recebido não corresponde ao valor esperado. Entre em contato com o suporte." })
       }
 

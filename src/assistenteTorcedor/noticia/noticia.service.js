@@ -2,20 +2,28 @@
 import { prisma } from "../../lib/prisma.js"
 import { coletarNoticiasTimes } from "./noticia.coletor.service.js"
 
+const CAMPOS_TIME_NOTICIAS = {
+  timeId: true,
+  nome: true,
+  nomePopular: true,
+  apelido: true,
+  disponivelAssinatura: true, 
+  slug: true
+}
+
 export async function atualizarNoticiasTime(timeId) {
   if (!timeId) throw new Error("ID do time não informado.")
 
   const time = await prisma.time.findUnique({
     where: { timeId },
-    select: {
-      timeId: true,
-      nome: true,
-      nomePopular: true,
-      slug: true
-    }
+    select: CAMPOS_TIME_NOTICIAS
   })
 
   if (!time) throw new Error("Time não encontrado.")
+
+  if (!time.disponivelAssinatura) {
+    throw new Error("Time indisponível para coleta de notícias.")
+  }
 
   console.log(`📰 Coletando notícias de ${time.nomePopular}...`)
 
@@ -27,22 +35,18 @@ export async function atualizarNoticiasTime(timeId) {
 export async function atualizarNoticiasTimesAtivos() {
   const times = await prisma.time.findMany({
     where: {
+      disponivelAssinatura: true,
       assinaturas: {
         some: {
           status: "ATIVA"
         }
       }
     },
-    select: {
-      timeId: true,
-      nome: true,
-      nomePopular: true,
-      slug: true
-    }
+    select: CAMPOS_TIME_NOTICIAS
   })
 
   if (!times.length) {
-    console.log("📰 Nenhum time com assinatura ativa.")
+    console.log("📰 Nenhum time disponível com assinatura ativa.")
     return 0
   }
 

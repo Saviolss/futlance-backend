@@ -1,4 +1,3 @@
-
 export const FONTES_NOTICIAS = [
   {
     nome: "GE",
@@ -13,6 +12,16 @@ export const FONTES_NOTICIAS = [
   {
     nome: "ESPN",
     url: "https://www.espn.com.br/espn/rss/futebol",
+    ativo: true
+  },
+  {
+    nome: "Trivela",
+    url: "https://trivela.com.br/feed/",
+    ativo: true
+  },
+  {
+    nome: "Torcedores.com",
+    url: "https://www.torcedores.com/rss",
     ativo: true
   }
 ]
